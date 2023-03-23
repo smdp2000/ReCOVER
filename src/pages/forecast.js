@@ -59,11 +59,11 @@ function Row() {
 		Papa.parse(u_cases, {
 			download: true,
 			worker: true,
-			complete: (results: any) => {
+			complete: (results) => {
 				for (let i = 1; i < results.data.length; i++) {
 					if (results.data[i].length > 2) globallist[i - 1] = results.data[i][1]
 				}
-				setRowState({...rowState, data_date: results.data[0].slice(2).map((y: any) => y.concat('T23:00:00Z'))})
+				setRowState({...rowState, data_date: results.data[0].slice(2).map(y => y.concat('T23:00:00Z'))})
 				setRowState({...rowState, arealist: globallist})
 				setRowState({...rowState, case_data: results.data})
 				doneLoading()
@@ -87,12 +87,12 @@ function Row() {
 		Papa.parse(u_case_preds, {
 			download: true,
 			worker: true,
-			complete: (results: any) => {
+			complete: (results) => {
 				let thislist = []
 				for (let i = 1; i < results.data.length; i++) {
 					if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
 				}
-				setRowState({...rowState, pred_date: results.data[0].slice(2).map((y: any)=>y.concat('T23:00:00Z'))})
+				setRowState({...rowState, pred_date: results.data[0].slice(2).map(y => y.concat('T23:00:00Z'))})
 				setRowState({...rowState, case_pred_list: thislist})
 				setRowState({...rowState, case_preds: results.data})
 				doneLoading()
@@ -102,7 +102,7 @@ function Row() {
 		Papa.parse(u_death_preds, {
 			download: true, 
 			worker: true,
-      		complete: (results: any) => {
+      		complete: (results) => {
 				let thislist = []
 				for(let i = 1; i < results.data.length; i++) {
 					if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
@@ -118,7 +118,7 @@ function Row() {
 		setRowState({...rowState, width: window.innerWidth, height: window.innerHeight})
 	}
 
-	function handleDataTypeSelect(e: any) {
+	function handleDataTypeSelect(e) {
 		setRowState({...rowState, dataType: e})
 	}
 
@@ -186,7 +186,7 @@ function Row() {
 		setRowState({...rowState, to_plot: full_dd})
 	}
 
-	function addNewArea(areas: any) { // select new area fn
+	function addNewArea(areas) { // select new area fn
 		let idx = rowState.arealist.indexOf(areas)
 		let case_d = []
 		if (idx > -1) {
@@ -217,11 +217,11 @@ function Row() {
 		plotData()
 	}
 
-	function onValuesChange (changedValues: any, allValues: any) {
-		if ("areas" in changedValues) {
+	function onValuesChange (changedValues, allValues) {
+		if ("areas" in changedValues)
 			addNewArea(allValues.areas)
-		}
-		else ("cum_or_inc" in changedValues) {
+		else ("cum_or_inc" in changedValues) 
+		{
 			setRowState({...rowState, cum_or_inc: allValues.cum_or_inc})
 			plotData() 
 		}
@@ -360,7 +360,7 @@ function Row() {
 						axisTop={null}
 						axisRight={null}
 						axisLeft={{
-						format: (y: any) => numeral(y).format("0.[0]a"),
+						format: y => numeral(y).format("0.[0]a"),
 						orient: "left",
 						tickSize: 5,
 						tickPadding: 5,
@@ -430,7 +430,7 @@ function Row() {
 						</div>
 					</Row>
 					<Row>
-						<p>Use the following links to download CSV files to analyze yourself (Right-click -> Save As): </p>
+						<p>Use the following links to download CSV files to analyze yourself (Right-click to Save As): </p>
 						<ul>
 							<li><a href =  "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/google_data.csv" download target="_blank">
 							All formatted case data from Google </a></li>

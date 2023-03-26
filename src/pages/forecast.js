@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import Papa from "papaparse"; // csv parser
-// import "./forecasts.css";
-import { ResponsiveLine } from "@nivo/line";
-import numeral from "numeral"; // for formatting numbers
+import Papa from "papaparse" // csv parser
+// import "./forecasts.css"
+import { ResponsiveLine } from "@nivo/line"
+import numeral from "numeral" // for formatting numbers
 
 import {
   Form,
@@ -11,15 +11,15 @@ import {
   Checkbox,
   Popover,
   Col,
-} from "antd";
+} from "antd"
 
-var u_cases = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv";
-var u_deaths = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv";
-var u_case_preds = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv";
-var u_death_preds = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv";
-var globallist = [];
-const init_areas = "California";
-const { Option } = Select;
+var u_cases = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv"
+var u_deaths = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv"
+var u_case_preds = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv"
+var u_death_preds = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv"
+var globallist = []
+const init_areas = "California"
+const { Option } = Select
 
 function Row() {
   	const [rowState, setRowState] = useState({
@@ -51,68 +51,65 @@ function Row() {
 	useEffect(() => {
 		updateWindowDimensions()
 		window.addEventListener('resize', updateWindowDimensions)
-		setRowState({...rowState, arealist: globallist})
 	}, [])
 
 	// componentWillMount
-	useEffect(() => {
-		Papa.parse(u_cases, {
-			download: true,
-			worker: true,
-			complete: (results) => {
-				for (let i = 1; i < results.data.length; i++) {
-					if (results.data[i].length > 2) globallist[i - 1] = results.data[i][1]
-				}
-				setRowState({...rowState, data_date: results.data[0].slice(2).map(y => y.concat('T23:00:00Z'))})
-				setRowState({...rowState, arealist: globallist})
-				setRowState({...rowState, case_data: results.data})
-				doneLoading()
+	Papa.parse(u_cases, {
+		download: true,
+		worker: true,
+		complete: (results) => {
+			for (let i = 1; i < results.data.length; i++) {
+				if (results.data[i].length > 2) globallist[i - 1] = results.data[i][1]
 			}
-		})
+			setRowState({...rowState, data_date: results.data[0].slice(2).map(y => y.concat('T23:00:00Z'))})
+			setRowState({...rowState, arealist: globallist})
+			setRowState({...rowState, case_data: results.data})
+			doneLoading()
+		}
+	})
+	
+	Papa.parse(u_deaths, {
+		download: true, 
+		worker: true,
+		complete: results => {
+			let thislist = []
+			for (let i=1; i < results.data.length; i++) {
+				if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
+			}
+			setRowState({...rowState, death_list: thislist})
+			setRowState({...rowState, death_data: results.data})
+			doneLoading()
+		}
+	})
 
-		Papa.parse(u_deaths, {
-			download: true, 
-			worker: true,
-      		complete: results => {
-				let thislist = []
-				for (let i=1; i < results.data.length; i++) {
-					if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
-				}
-				setRowState({...rowState, death_list: thislist})
-				setRowState({...rowState, death_data: results.data})
-				doneLoading()
+	Papa.parse(u_case_preds, {
+		download: true,
+		worker: true,
+		complete: (results) => {
+			let thislist = []
+			for (let i = 1; i < results.data.length; i++) {
+				if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
 			}
-		})
+			setRowState({...rowState, pred_date: results.data[0].slice(2).map(y => y.concat('T23:00:00Z'))})
+			setRowState({...rowState, case_pred_list: thislist})
+			setRowState({...rowState, case_preds: results.data})
+			doneLoading()
+		}
+	})
 
-		Papa.parse(u_case_preds, {
-			download: true,
-			worker: true,
-			complete: (results) => {
-				let thislist = []
-				for (let i = 1; i < results.data.length; i++) {
-					if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
-				}
-				setRowState({...rowState, pred_date: results.data[0].slice(2).map(y => y.concat('T23:00:00Z'))})
-				setRowState({...rowState, case_pred_list: thislist})
-				setRowState({...rowState, case_preds: results.data})
-				doneLoading()
+	Papa.parse(u_death_preds, {
+		download: true, 
+		worker: true,
+		complete: (results) => {
+			let thislist = []
+			for(let i = 1; i < results.data.length; i++) {
+				if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
 			}
-		})
-
-		Papa.parse(u_death_preds, {
-			download: true, 
-			worker: true,
-      		complete: (results) => {
-				let thislist = []
-				for(let i = 1; i < results.data.length; i++) {
-					if(results.data[i].length > 2) thislist[i-1] = results.data[i][1]
-				}
-				setRowState({...rowState, death_pred_list: thislist})
-				setRowState({...rowState, death_preds: results.data})
-				doneLoading()
-			}
-      })
-	}, [])
+			setRowState({...rowState, death_pred_list: thislist})
+			setRowState({...rowState, death_preds: results.data})
+			doneLoading()
+		}
+	})
 
 	function updateWindowDimensions() {
 		setRowState({...rowState, width: window.innerWidth, height: window.innerHeight})
@@ -343,77 +340,77 @@ function Row() {
 				<Row>
 					<div className="graph-row">
 						<ResponsiveLine
-						data = {to_plot}
-						margin={{ top: 50, right: 10, bottom: 100, left: 60 }}
-						xScale={{
-						type: "time",
-						format: "%Y-%m-%dT%H:%M:%SZ",
-						}}
-						xFormat="time:%Y-%m-%d"
-						yScale={{
-						type: "linear",
-						min: "auto",
-						max: "auto",
-						stacked: false,
-						reverse: false
-						}}
-						axisTop={null}
-						axisRight={null}
-						axisLeft={{
-						format: y => numeral(y).format("0.[0]a"),
-						orient: "left",
-						tickSize: 5,
-						tickPadding: 5,
-						tickRotation: 0,
-						legend: 'Reported',
-						legendOffset: -55,
-						legendPosition: "middle",
-						}}
-						axisBottom={{
-						format: "%b %d",
-						tickValues: num_ticks,
-						legend: "date",
-						legendOffset: 36,
-						legendPosition: "middle"
-						}}
-						colors={{ scheme: "nivo" }}
-						pointSize={10}
-						pointColor={{ theme: "background" }}
-						pointBorderWidth={2}
-						pointBorderColor={{ from: "serieColor" }}
-						pointLabel="y"
-						pointLabelYOffset={-12}
-						useMesh={true}
-						legends={[
-							{
-								text: {
-									fontSize: 14
-								},
-								anchor: "top-left",
-								direction: "column",
-								justify: false,
-								translateX: 30,
-								translateY: 0,
-								itemsSpacing: 0,
-								itemDirection: "left-to-right",
-								itemWidth: 80,
-								itemHeight: 20,
-								itemOpacity: 0.75,
-								symbolSize: 12,
-								symbolShape: "circle",
-								symbolBorderColor: "rgba(0, 0, 0, .5)",
-								effects: [
-									{
-										on: "hover",
-										style: {
-											itemBackground: "rgba(0, 0, 0, .03)",
-											itemOpacity: 1
+							data = {to_plot}
+							margin={{ top: 50, right: 10, bottom: 100, left: 60 }}
+							xScale={{
+							type: "time",
+							format: "%Y-%m-%dT%H:%M:%SZ",
+							}}
+							xFormat="time:%Y-%m-%d"
+							yScale={{
+							type: "linear",
+							min: "auto",
+							max: "auto",
+							stacked: false,
+							reverse: false
+							}}
+							axisTop={null}
+							axisRight={null}
+							axisLeft={{
+							format: y => numeral(y).format("0.[0]a"),
+							orient: "left",
+							tickSize: 5,
+							tickPadding: 5,
+							tickRotation: 0,
+							legend: 'Reported',
+							legendOffset: -55,
+							legendPosition: "middle",
+							}}
+							axisBottom={{
+							format: "%b %d",
+							// tickValues: num_ticks,
+							legend: "date",
+							legendOffset: 36,
+							legendPosition: "middle"
+							}}
+							colors={{ scheme: "nivo" }}
+							pointSize={10}
+							pointColor={{ theme: "background" }}
+							pointBorderWidth={2}
+							pointBorderColor={{ from: "serieColor" }}
+							pointLabel="y"
+							pointLabelYOffset={-12}
+							useMesh={true}
+							legends={[
+								{
+									text: {
+										fontSize: 14
+									},
+									anchor: "top-left",
+									direction: "column",
+									justify: false,
+									translateX: 30,
+									translateY: 0,
+									itemsSpacing: 0,
+									itemDirection: "left-to-right",
+									itemWidth: 80,
+									itemHeight: 20,
+									itemOpacity: 0.75,
+									symbolSize: 12,
+									symbolShape: "circle",
+									symbolBorderColor: "rgba(0, 0, 0, .5)",
+									effects: [
+										{
+											on: "hover",
+											style: {
+												itemBackground: "rgba(0, 0, 0, .03)",
+												itemOpacity: 1
+											}
 										}
-									}
-								]
-							}
-						]}
-						theme = {theme}
+									]
+								}
+							]}
+							theme = {theme}
 						/>
 					</div>
 				</Row>
@@ -478,4 +475,4 @@ function Row() {
 	)
 }
 
-export default RoW;
+export default Row;

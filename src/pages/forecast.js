@@ -22,30 +22,28 @@ const init_areas = "California"
 const { Option } = Select
 
 function Row() {
-  	const [rowState, setRowState] = useState({
-		area_message: "Please wait for data to load",
-		cum_or_inc: "Cumulative",
-		data_loading: true,
-		areas: init_areas,
-		width: 0,
-		height: 0,
-		arealist: [],
-		case_data: [], 
-		death_data: [],
-		death_list:[],
-		case_preds: [],
-		case_pred_list: [],
-		death_preds: [],
-		death_pred_list: [],
-		dataType: 'case',
-		case_data_plot: [],
-		death_data_plot: [],
-		case_preds_plot: [],
-		death_preds_plot: [],
-		data_date:[],
-		pred_date: [],
-		to_plot: []
-	})
+  const [rowState, setRowState] = useState({
+    area_message: "Please wait for data to load",
+    cum_or_inc: "Cumulative",
+    data_loading: true,
+    areas: init_areas,
+    arealist: [],
+    case_data: [],
+    death_data: [],
+    death_list: [],
+    case_preds: [],
+    case_pred_list: [],
+    death_preds: [],
+    death_pred_list: [],
+    dataType: "case",
+    case_data_plot: [],
+    death_data_plot: [],
+    case_preds_plot: [],
+    death_preds_plot: [],
+    data_date: [],
+    pred_date: [],
+    to_plot: [],
+  });
 
   // componentDidMount
 	useEffect(() => {
@@ -111,129 +109,152 @@ function Row() {
 		}
 	})
 
-	function updateWindowDimensions() {
-		setRowState({...rowState, width: window.innerWidth, height: window.innerHeight})
-	}
+  function updateWindowDimensions() {
+    setRowState({
+      ...rowState,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+  }
 
-	function handleDataTypeSelect(e) {
-		setRowState({...rowState, dataType: e})
-	}
+  function handleDataTypeSelect(e) {
+    setRowState({ ...rowState, dataType: e });
+  }
 
-	function plotData() {
-		let dd = [] // data [<date, value>]
-		let dd_p = [] // prediction data
-		let thisdata, preds
+  function plotData() {
+    let dd = []; // data [<date, value>]
+    let dd_p = []; // prediction data
+    let thisdata, preds;
 
-		// radio button selection
-		if (rowState.dataType == 'cases') {
-			thisdata = rowState.case_data_plot
-			preds = rowState.case_preds_plot
-		}
-		else {
-			thisdata = rowState.death_data_plot
-			preds = rowState.death_preds_plot
-		}
+    // radio button selection
+    if (rowState.dataType == "cases") {
+      thisdata = rowState.case_data_plot;
+      preds = rowState.case_preds_plot;
+    } else {
+      thisdata = rowState.death_data_plot;
+      preds = rowState.death_preds_plot;
+    }
 
-		if (rowState.cum_or_inc === 'Cumulative') {
-			for (let i = 0; i < thisdata.length; i++) {
-				if (thisdata[i] > 0 && rowState.data_date[i]) {
-					dd.push({
-						x: rowState.data_date[i],
-						y: thisdata[i]
-					})
-				}
-			}
-			let dd_p = []
-			for (let i = 0; i < preds.length; i++) {
-				if (rowState.pred_date[i]) {
-					dd_p.push({
-						x: rowState.pred_date[i],
-						y: preds[i]
-					})
-				}
-			}
-		}
-		else { // successive differences
-			let base_dat = thisdata[0]
-			let diff_dat = 0
-			for (let i = 1; i < thisdata.length; i++) {
-				diff_dat = thisdata[i] - base_dat
-				if (diff_dat >= 0 && base_dat > 0 && rowState.data_date[i]) {
-					dd.push({
-						x: rowState.data_date[i],
-						y: diff_dat
-					})
-				}
-				base_dat = thisdata[i]
-			}
-			base_dat = thisdata[thisdata.length - 1]
+    if (rowState.cum_or_inc === "Cumulative") {
+      for (let i = 0; i < thisdata.length; i++) {
+        if (thisdata[i] > 0 && rowState.data_date[i]) {
+          dd.push({
+            x: rowState.data_date[i],
+            y: thisdata[i],
+          });
+        }
+      }
+      let dd_p = [];
+      for (let i = 0; i < preds.length; i++) {
+        if (rowState.pred_date[i]) {
+          dd_p.push({
+            x: rowState.pred_date[i],
+            y: preds[i],
+          });
+        }
+      }
+    } else {
+      // successive differences
+      let base_dat = thisdata[0];
+      let diff_dat = 0;
+      for (let i = 1; i < thisdata.length; i++) {
+        diff_dat = thisdata[i] - base_dat;
+        if (diff_dat >= 0 && base_dat > 0 && rowState.data_date[i]) {
+          dd.push({
+            x: rowState.data_date[i],
+            y: diff_dat,
+          });
+        }
+        base_dat = thisdata[i];
+      }
+      base_dat = thisdata[thisdata.length - 1];
 
-			for (let i = 1; i < preds.length; i++) {
-				diff_dat = preds[i] - base_dat
-				if (diff_dat >= 0 && base_dat > 0 && rowState.pred_date[i]) {
-					dd_p.push({
-						x: rowState.pred_date[i],
-						y: diff_dat
-					})
-				}
-				base_dat = preds[i]
-			}
-		}
-		let full_dd = [{id: 'data', data: dd}, {id: 'pred', data: dd_p}]
-		setRowState({...rowState, to_plot: full_dd})
-	}
+      for (let i = 1; i < preds.length; i++) {
+        diff_dat = preds[i] - base_dat;
+        if (diff_dat >= 0 && base_dat > 0 && rowState.pred_date[i]) {
+          dd_p.push({
+            x: rowState.pred_date[i],
+            y: diff_dat,
+          });
+        }
+        base_dat = preds[i];
+      }
+    }
+    let full_dd = [
+      { id: "data", data: dd },
+      { id: "pred", data: dd_p },
+    ];
+    setRowState({ ...rowState, to_plot: full_dd });
+  }
 
-	function addNewArea(areas) { // select new area fn
-		let idx = rowState.arealist.indexOf(areas)
-		let case_d = []
-		if (idx > -1) {
-			case_d = rowState.case_data[idx + 1].slice(2)
-		}
-		setRowState({...rowState, case_data_plot: case_d})
+  function addNewArea(areas) {
+    // select new area fn
+    let idx = rowState.arealist.indexOf(areas);
+    let case_d = [];
+    if (idx > -1) {
+      case_d = rowState.case_data[idx + 1].slice(2);
+    }
+    setRowState({ ...rowState, case_data_plot: case_d });
 
-		case_d = []
-		idx = rowState.case_pred_list.indexOf(areas)
-		if (idx > -1) {
-			case_d = rowState.case_preds[idx + 1].slice(2)
-		}
-		setRowState({...rowState, case_preds_plot: case_d})
+    case_d = [];
+    idx = rowState.case_pred_list.indexOf(areas);
+    if (idx > -1) {
+      case_d = rowState.case_preds[idx + 1].slice(2);
+    }
+    setRowState({ ...rowState, case_preds_plot: case_d });
 
-		let death_d = []
-		idx = rowState.death_list.indexOf(areas)
-		if (idx > -1) {
-			death_d = rowState.death_data[idx + 1].slice(2)
-		}
-		setRowState({...rowState, death_data_plot: death_d})
+    let death_d = [];
+    idx = rowState.death_list.indexOf(areas);
+    if (idx > -1) {
+      death_d = rowState.death_data[idx + 1].slice(2);
+    }
+    setRowState({ ...rowState, death_data_plot: death_d });
 
-		death_d = []
-		idx = rowState.death_pred_list.indexOf(area)
-		if (idx > -1) {
-			death_d = rowState.death_preds[idx + 1].slice(2)
-		}
-		setRowState({...rowState, death_preds_plot: death_d})
-		plotData()
-	}
+    death_d = [];
+    idx = rowState.death_pred_list.indexOf(area);
+    if (idx > -1) {
+      death_d = rowState.death_preds[idx + 1].slice(2);
+    }
+    setRowState({ ...rowState, death_preds_plot: death_d });
+    plotData();
+  }
 
-	function onValuesChange (changedValues, allValues) {
-		if ("areas" in changedValues)
-			addNewArea(allValues.areas)
-		else ("cum_or_inc" in changedValues) 
-		{
-			setRowState({...rowState, cum_or_inc: allValues.cum_or_inc})
-			plotData() 
-		}
-	}
+  function onValuesChange(changedValues, allValues) {
+    if ("areas" in changedValues) addNewArea(allValues.areas);
+    else "cum_or_inc" in changedValues;
+    {
+      setRowState({ ...rowState, cum_or_inc: allValues.cum_or_inc });
+      plotData();
+    }
+  }
 
-	const doneLoading = () => {
-		if (rowState.data_loading && rowState.case_preds.length > 0 && rowState.death_preds.length > 0 && 
-			rowState.death_data.length > 0 && rowState.case_data.length > 0) {
-			setRowState({...rowState, data_loading: false})
-			setRowState({...rowState, area_message: 'Start typing a location name to see its data and forecasts'})
-			setRowState({...rowState, areas: init_areas})
-		}
-	}
+  const doneLoading = () => {
+    if (
+      rowState.data_loading &&
+      rowState.case_preds.length > 0 &&
+      rowState.death_preds.length > 0 &&
+      rowState.death_data.length > 0 &&
+      rowState.case_data.length > 0
+    ) {
+      setRowState({ ...rowState, data_loading: false });
+      setRowState({
+        ...rowState,
+        area_message:
+          "Start typing a location name to see its data and forecasts",
+      });
+      setRowState({ ...rowState, areas: init_areas });
+    }
+  };
 
-	const {areas,arealist,dataType, to_plot, data_loading, cum_or_inc, area_message} = rowState
+  const {
+    areas,
+    arealist,
+    dataType,
+    to_plot,
+    data_loading,
+    cum_or_inc,
+    area_message,
+  } = rowState;
 
     const theme = {
 		axis: {

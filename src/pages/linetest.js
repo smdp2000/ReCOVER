@@ -1,27 +1,58 @@
-import { useState, useEffect } from 'react'
-import 'chart.js/auto'
-import { Chart } from 'react-chartjs-2'
-import { readString } from 'react-papaparse'
-import axios from 'axios'
-import { FormControl, InputLabel, Select, MenuItem } from '@mui/material'
+import { useState, useEffect } from "react"
+import "chart.js/auto"
+import { Chart } from "react-chartjs-2"
+import { readString } from "react-papaparse"
+import axios from "axios"
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material"
+import dynamic from "next/dynamic"
+const zoomPlugin = dynamic(() => import("chartjs-plugin-zoom"), {
+    ssr: false,
+})
 
 const fileList = {
-    cases: 'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv',
-    deaths: 'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv',
+    cases: "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv",
+    deaths: "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv",
     pred_cases:
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv',
+        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv",
     pred_deaths:
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv',
+        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv",
+}
+
+const hoverLinePlugin = {
+    afterDatasetsDraw(chart) {
+        const {
+            ctx,
+            tooltip,
+            chartArea: { bottom },
+            scales: { x, y },
+        } = chart
+
+        if (tooltip && tooltip._active.length > 0) {
+            const xCoor = x.getPixelForValue(tooltip.dataPoints[0].dataIndex)
+            const yCoor = y.getPixelForValue(tooltip.dataPoints[0].parsed.y)
+
+            ctx.save()
+            ctx.beginPath()
+            ctx.lineWidth = 3
+            ctx.strokeStyle = "rgba(255, 191, 48, 0.5)"
+            ctx.setLineDash([6, 4])
+            ctx.moveTo(xCoor, yCoor)
+            ctx.lineTo(xCoor, bottom)
+            ctx.stroke()
+            ctx.closePath()
+            ctx.setLineDash([])
+        }
+    },
 }
 
 function linetest() {
     const [fileState, setFileState] = useState({
-        name: 'cases',
-        url: fileList['cases'],
+        name: "cases",
+        url: fileList["cases"],
     })
 
     const [chartState, setChartState] = useState({
-        category: '',
+        category: "",
         labels: [],
         dates: [],
         cases: [],
@@ -30,10 +61,10 @@ function linetest() {
             labels: [],
             datasets: [
                 {
-                    label: 'dummy data',
+                    label: "dummy data",
                     data: [],
                     fill: false,
-                    borderColor: 'rgb(75, 192, 192)',
+                    borderColor: "rgb(75, 192, 192)",
                     tension: 0.1,
                 },
             ],
@@ -63,7 +94,7 @@ function linetest() {
                             label: labels[i],
                             data: cases[i],
                             fill: false,
-                            borderColor: 'rgb(75, 192, 192)',
+                            borderColor: "rgb(75, 192, 192)",
                             tension: 0.1,
                         })
                     }
@@ -82,7 +113,7 @@ function linetest() {
                                     label: labels[0],
                                     data: cases[0],
                                     fill: false,
-                                    borderColor: 'rgb(75, 192, 192)',
+                                    borderColor: "rgb(75, 192, 192)",
                                     tension: 0.1,
                                 },
                             ],
@@ -121,7 +152,7 @@ function linetest() {
                         label: chartState.labels[i],
                         data: chartState.cases[i],
                         fill: false,
-                        borderColor: 'rgb(75, 192, 192)',
+                        borderColor: "rgb(75, 192, 192)",
                         tension: 0.1,
                     },
                 ],
@@ -160,7 +191,11 @@ function linetest() {
                 </Select>
             </FormControl>
             <div className="chart">
-                <Chart type="line" data={chartState.current_dataset} />
+                <Chart
+                    type="line"
+                    data={chartState.current_dataset}
+                    plugins={[hoverLinePlugin, zoomPlugin]}
+                />
             </div>
         </div>
     )

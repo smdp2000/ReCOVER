@@ -3,19 +3,29 @@ import "chart.js/auto"
 import { Chart } from "react-chartjs-2"
 import { readString } from "react-papaparse"
 import axios from "axios"
-import { FormControl, InputLabel, Select, MenuItem } from "@mui/material"
+import {
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    ToggleButtonGroup,
+    ToggleButton,
+} from "@mui/material"
 import dynamic from "next/dynamic"
 const zoomPlugin = dynamic(() => import("chartjs-plugin-zoom"), {
     ssr: false,
 })
 
 const fileList = {
-    cases: "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv",
-    deaths: "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv",
-    pred_cases:
+    // first index is actual, second is predictive
+    cases: [
+        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv",
         "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv",
-    pred_deaths:
+    ],
+    deaths: [
+        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv",
         "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv",
+    ],
 }
 
 const hoverLinePlugin = {
@@ -48,20 +58,23 @@ const hoverLinePlugin = {
 function linetest() {
     const [fileState, setFileState] = useState({
         name: "cases",
-        url: fileList["cases"],
+        urls: fileList["cases"],
     })
 
     const [chartState, setChartState] = useState({
+        cum_or_inc: "cum",
         category: "",
         labels: [],
         dates: [],
-        cases: [],
-        all_datasets: [],
+        cases: {
+            actual: [],
+            pred: [],
+        },
         current_dataset: {
             labels: [],
             datasets: [
                 {
-                    label: "dummy data",
+                    label: "loading data",
                     data: [],
                     fill: false,
                     borderColor: "rgb(75, 192, 192)",
@@ -72,15 +85,32 @@ function linetest() {
     })
 
     const fetchData = async () => {
-        await axios.get(fileState.url).then((response) => {
+        let data = []
+        let allDates = []
+        await axios.get(fileState.urls[0]).then((response) => {
             readString(response.data, {
                 worker: true,
                 complete: (results) => {
-                    console.log(results.data)
+                    let cases = []
 
+                    for (let i = 1; i < results.data.length; ++i) {
+                        if (results.data[i].length > 2)
+                            cases.push(results.data[i].slice(2))
+                    }
+
+                    allDates = results.data[0].slice(2)
+
+                    data.push(cases)
+                },
+            })
+        })
+
+        await axios.get(fileState.urls[1]).then((response) => {
+            readString(response.data, {
+                worker: true,
+                complete: (results) => {
                     let labels = []
                     let cases = []
-                    let datasets = []
 
                     for (let i = 1; i < results.data.length; ++i) {
                         if (results.data[i].length > 2) {
@@ -89,32 +119,36 @@ function linetest() {
                         }
                     }
 
-                    for (let i = 0; i < labels.length; ++i) {
-                        datasets.push({
-                            label: labels[i],
-                            data: cases[i],
-                            fill: false,
-                            borderColor: "rgb(75, 192, 192)",
-                            tension: 0.1,
-                        })
-                    }
+                    allDates = allDates.concat(results.data[0].slice(2))
+
+                    data.push(cases)
+
+                    let color1 = new Array(data[0][0].length).fill(
+                        "rgb(75, 192, 192)"
+                    )
+                    let color2 = new Array(data[1][0].length).fill(
+                        "rgba(255, 191, 48)"
+                    )
 
                     setChartState({
                         ...chartState,
                         category: results.data[0][1],
                         labels: labels,
-                        dates: results.data[0].slice(2),
-                        cases: cases,
-                        all_datasets: datasets,
+                        dates: allDates,
+                        cases: {
+                            actual: data[0],
+                            pred: data[1],
+                        },
                         current_dataset: {
-                            labels: results.data[0].slice(2),
+                            labels: allDates,
                             datasets: [
                                 {
                                     label: labels[0],
-                                    data: cases[0],
+                                    data: data[0][0].concat(data[1][0]),
                                     fill: false,
-                                    borderColor: "rgb(75, 192, 192)",
                                     tension: 0.1,
+                                    borderColor: color1.concat(color2),
+                                    backgroundColor: color1.concat(color2),
                                 },
                             ],
                         },
@@ -132,7 +166,11 @@ function linetest() {
         const newFile = e.target.value
         setFileState({
             name: newFile,
-            url: fileList[newFile],
+            urls: fileList[newFile],
+        })
+        setChartState({
+            ...chartState,
+            cum_or_inc: "cum",
         })
     }
 
@@ -143,53 +181,135 @@ function linetest() {
         for (i = 0; i < chartState.labels.length; ++i)
             if (chartState.labels[i] === newLabel) break
 
+        let color1 = new Array(chartState.cases["actual"][i].length).fill(
+            "rgb(75, 192, 192)"
+        )
+        let color2 = new Array(chartState.cases["pred"][i].length).fill(
+            "rgba(255, 191, 48)"
+        )
+
         setChartState({
             ...chartState,
+            cum_or_inc: "cum",
             current_dataset: {
                 labels: chartState.dates,
                 datasets: [
                     {
-                        label: chartState.labels[i],
-                        data: chartState.cases[i],
+                        label: newLabel,
+                        data: chartState.cases["actual"][i].concat(
+                            chartState.cases["pred"][i]
+                        ),
                         fill: false,
-                        borderColor: "rgb(75, 192, 192)",
                         tension: 0.1,
+                        borderColor: color1.concat(color2),
+                        backgroundColor: color1.concat(color2),
                     },
                 ],
             },
         })
     }
 
+    const handleCumOrIncChange = (e) => {
+        const cumOrInc = e.target.value
+        const currentDataset = chartState.current_dataset
+        const currentData = currentDataset.datasets[0]
+        let i
+
+        for (i = 0; i < chartState.labels.length; ++i)
+            if (chartState.labels[i] === currentData.label) break
+
+        let data = []
+
+        if (cumOrInc === "cum") {
+            data = chartState.cases["actual"][i].concat(
+                chartState.cases["pred"][i]
+            )
+        } else {
+            let diff = 0
+
+            for (let i = 1; i < currentData.data.length; ++i) {
+                diff = currentData.data[i] - currentData.data[i - 1]
+                if (
+                    diff >= 0 &&
+                    currentData.data[i - 1] > 0 &&
+                    currentDataset.labels[i]
+                )
+                    data.push(diff)
+                else data.push(0)
+            }
+        }
+
+        let color1 = new Array(chartState.cases["actual"][i].length).fill(
+            "rgb(75, 192, 192)"
+        )
+        let color2 = new Array(chartState.cases["pred"][i].length).fill(
+            "rgba(255, 191, 48)"
+        )
+
+        const modifiedDataset = {
+            label: currentData.label,
+            data: data,
+            fill: false,
+            tension: 0.1,
+            borderColor: color1.concat(color2),
+            backgroundColor: color1.concat(color2),
+        }
+
+        setChartState({
+            ...chartState,
+            cum_or_inc: cumOrInc,
+            current_dataset: {
+                labels: currentDataset.labels,
+                datasets: [modifiedDataset],
+            },
+        })
+    }
+
     return (
         <div>
-            <FormControl>
-                <InputLabel id="input-label">File</InputLabel>
-                <Select
-                    labelId="file-id"
-                    id="select"
-                    value={fileState.name}
-                    label="category"
-                    onChange={handleFileChange}
+            <div className="menu">
+                <FormControl sx={{ mr: "20px" }}>
+                    <InputLabel id="input-label">File</InputLabel>
+                    <Select
+                        labelId="file-id"
+                        id="select"
+                        value={fileState.name}
+                        label="category"
+                        onChange={handleFileChange}
+                    >
+                        {Object.keys(fileList).map((fileName) => {
+                            return (
+                                <MenuItem value={fileName}>{fileName}</MenuItem>
+                            )
+                        })}
+                    </Select>
+                </FormControl>
+                <FormControl sx={{ mr: "20px" }}>
+                    <InputLabel id="input-label">
+                        {chartState.category}
+                    </InputLabel>
+                    <Select
+                        labelId="label-id"
+                        id="select"
+                        value={chartState.current_dataset.datasets[0].label}
+                        label="category"
+                        onChange={handleLabelChange}
+                    >
+                        {chartState.labels.map((label) => {
+                            return <MenuItem value={label}>{label}</MenuItem>
+                        })}
+                    </Select>
+                </FormControl>
+                <ToggleButtonGroup
+                    aria-label="outlined primary button group"
+                    value={chartState.cum_or_inc}
+                    onChange={handleCumOrIncChange}
+                    exclusive
                 >
-                    {Object.keys(fileList).map((fileName) => {
-                        return <MenuItem value={fileName}>{fileName}</MenuItem>
-                    })}
-                </Select>
-            </FormControl>
-            <FormControl>
-                <InputLabel id="input-label">{chartState.category}</InputLabel>
-                <Select
-                    labelId="label-id"
-                    id="select"
-                    value={chartState.current_dataset.datasets[0].label}
-                    label="category"
-                    onChange={handleLabelChange}
-                >
-                    {chartState.labels.map((label) => {
-                        return <MenuItem value={label}>{label}</MenuItem>
-                    })}
-                </Select>
-            </FormControl>
+                    <ToggleButton value="cum">Cumulative</ToggleButton>
+                    <ToggleButton value="inc"> Weekly New</ToggleButton>
+                </ToggleButtonGroup>
+            </div>
             <div className="chart">
                 <Chart
                     type="line"

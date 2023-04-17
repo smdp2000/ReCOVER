@@ -28,12 +28,13 @@ const fileList = {
     ],
 }
 
+// custom plugin for tooltip and vertical + horizontal guidelines on hover
 const hoverLinePlugin = {
     afterDatasetsDraw(chart) {
         const {
             ctx,
             tooltip,
-            chartArea: { bottom },
+            chartArea: { bottom, left },
             scales: { x, y },
         } = chart
 
@@ -44,10 +45,18 @@ const hoverLinePlugin = {
             ctx.save()
             ctx.beginPath()
             ctx.lineWidth = 3
-            ctx.strokeStyle = "rgba(255, 191, 48, 0.5)"
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.5)"
             ctx.setLineDash([6, 4])
             ctx.moveTo(xCoor, yCoor)
             ctx.lineTo(xCoor, bottom)
+            ctx.stroke()
+            ctx.closePath()
+            ctx.beginPath()
+            ctx.lineWidth = 3
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.5)"
+            ctx.setLineDash([6, 4])
+            ctx.moveTo(xCoor, yCoor)
+            ctx.lineTo(left, yCoor)
             ctx.stroke()
             ctx.closePath()
             ctx.setLineDash([])
@@ -63,19 +72,22 @@ function linetest() {
 
     const [chartState, setChartState] = useState({
         cum_or_inc: "cum",
-        category: "",
-        labels: [],
-        dates: [],
+        category: "", // category of labels ie. country
+        labels: [], // list of labels (ie. countries)
+        dates: [], // list of dates
         cases: {
+            // cases, actual and predictive, each index is a list of cases
             actual: [],
             pred: [],
         },
         current_dataset: {
-            labels: [],
+            // current dataset to be displayed
+            labels: [], // dates (x axis)
             datasets: [
+                // list of datasets, more can be added to display different lines on the same chart
                 {
                     label: "loading data",
-                    data: [],
+                    data: [], // cases (y axis)
                     fill: false,
                     borderColor: "rgb(75, 192, 192)",
                     tension: 0.1,
@@ -84,6 +96,7 @@ function linetest() {
         },
     })
 
+    // fetch data from the actual data file
     const fetchData = async () => {
         let data = []
         let allDates = []
@@ -93,18 +106,20 @@ function linetest() {
                 complete: (results) => {
                     let cases = []
 
+                    // get cases array at each label
                     for (let i = 1; i < results.data.length; ++i) {
                         if (results.data[i].length > 2)
-                            cases.push(results.data[i].slice(2))
+                            cases.push(results.data[i].slice(2)) // slice to remove the id and label from cases array
                     }
 
-                    allDates = results.data[0].slice(2)
+                    allDates = results.data[0].slice(2) // slice to remove the id and label from dates array
 
                     data.push(cases)
                 },
             })
         })
 
+        // fetch data from the corresponding predictive data file
         await axios.get(fileState.urls[1]).then((response) => {
             readString(response.data, {
                 worker: true,
@@ -112,17 +127,19 @@ function linetest() {
                     let labels = []
                     let cases = []
 
+                    // get label and cases array at each label
                     for (let i = 1; i < results.data.length; ++i) {
                         if (results.data[i].length > 2) {
-                            labels[i - 1] = results.data[i][1]
-                            cases.push(results.data[i].slice(2))
+                            labels[i - 1] = results.data[i][1] // get the label
+                            cases.push(results.data[i].slice(2)) // slice to remove the id and label from cases array
                         }
                     }
 
-                    allDates = allDates.concat(results.data[0].slice(2))
+                    allDates = allDates.concat(results.data[0].slice(2)) // slice to remove the id and label from dates array
 
                     data.push(cases)
 
+                    // set the colors for the actual and predictive data
                     let color1 = new Array(data[0][0].length).fill(
                         "rgb(75, 192, 192)"
                     )
@@ -131,6 +148,7 @@ function linetest() {
                     )
 
                     setChartState({
+                        // set the chart state
                         ...chartState,
                         category: results.data[0][1],
                         labels: labels,
@@ -144,7 +162,7 @@ function linetest() {
                             datasets: [
                                 {
                                     label: labels[0],
-                                    data: data[0][0].concat(data[1][0]),
+                                    data: data[0][0].concat(data[1][0]), // concat the actual and predictive data
                                     fill: false,
                                     tension: 0.1,
                                     borderColor: color1.concat(color2),
@@ -158,10 +176,12 @@ function linetest() {
         })
     }
 
+    // fetch data on file change
     useEffect(() => {
         fetchData()
     }, [fileState])
 
+    // file change handler
     const handleFileChange = (e) => {
         const newFile = e.target.value
         setFileState({
@@ -174,13 +194,19 @@ function linetest() {
         })
     }
 
+    // label change handler
     const handleLabelChange = (e) => {
-        const newLabel = e.target.value
+        const newLabel = e.target.value // get the selected label (ie. country)
         let i
 
-        for (i = 0; i < chartState.labels.length; ++i)
+        for (
+            i = 0;
+            i < chartState.labels.length;
+            ++i // find the index of the label
+        )
             if (chartState.labels[i] === newLabel) break
 
+        // set colors for the actual and predicted data
         let color1 = new Array(chartState.cases["actual"][i].length).fill(
             "rgb(75, 192, 192)"
         )
@@ -189,6 +215,7 @@ function linetest() {
         )
 
         setChartState({
+            // update the chart state
             ...chartState,
             cum_or_inc: "cum",
             current_dataset: {
@@ -197,6 +224,7 @@ function linetest() {
                     {
                         label: newLabel,
                         data: chartState.cases["actual"][i].concat(
+                            // get the new data from index
                             chartState.cases["pred"][i]
                         ),
                         fill: false,
@@ -209,22 +237,29 @@ function linetest() {
         })
     }
 
+    // umulative or incremental change handler
     const handleCumOrIncChange = (e) => {
-        const cumOrInc = e.target.value
+        const cumOrInc = e.target.value // get the selected value
         const currentDataset = chartState.current_dataset
         const currentData = currentDataset.datasets[0]
         let i
 
-        for (i = 0; i < chartState.labels.length; ++i)
+        for (
+            i = 0;
+            i < chartState.labels.length;
+            ++i // find the index of the label
+        )
             if (chartState.labels[i] === currentData.label) break
 
         let data = []
 
         if (cumOrInc === "cum") {
+            // if cumulative, just fetch the data from the state
             data = chartState.cases["actual"][i].concat(
                 chartState.cases["pred"][i]
             )
         } else {
+            // if incremental, calculate the difference between consecutive values
             let diff = 0
 
             for (let i = 1; i < currentData.data.length; ++i) {
@@ -239,6 +274,7 @@ function linetest() {
             }
         }
 
+        // set colors for the actual and predicted data
         let color1 = new Array(chartState.cases["actual"][i].length).fill(
             "rgb(75, 192, 192)"
         )
@@ -246,6 +282,7 @@ function linetest() {
             "rgba(255, 191, 48)"
         )
 
+        // create a new dataset with the new data
         const modifiedDataset = {
             label: currentData.label,
             data: data,
@@ -256,11 +293,12 @@ function linetest() {
         }
 
         setChartState({
+            // update the chart state
             ...chartState,
             cum_or_inc: cumOrInc,
             current_dataset: {
                 labels: currentDataset.labels,
-                datasets: [modifiedDataset],
+                datasets: [modifiedDataset], // replace the old dataset with the new one
             },
         })
     }

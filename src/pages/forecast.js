@@ -1,32 +1,33 @@
-import { useState, useEffect } from "react"
-import "chart.js/auto"
-import { Chart } from "react-chartjs-2"
-import { readString } from "react-papaparse"
-import axios from "axios"
-import {
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    ToggleButtonGroup,
-    ToggleButton,
-} from "@mui/material"
-import dynamic from "next/dynamic"
-const zoomPlugin = dynamic(() => import("chartjs-plugin-zoom"), {
+import { useState, useEffect } from 'react'
+import 'chart.js/auto'
+import 'chartjs-adapter-date-fns'
+import { Chart } from 'react-chartjs-2'
+import { readString } from 'react-papaparse'
+import axios from 'axios'
+import { FormControl, InputLabel, Select, MenuItem, ToggleButtonGroup, ToggleButton } from '@mui/material'
+import dynamic from 'next/dynamic'
+const zoomPlugin = dynamic(() => import('chartjs-plugin-zoom'), {
     ssr: false,
 })
 
 const fileList = {
-    // first index is actual, second is predictive
+    // first index is actual, second is predictive, third is upper bound, fourth is lower bound
     cases: [
-        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv",
-        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv",
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv',
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv',
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_ub.csv',
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_lb.csv',
     ],
     deaths: [
-        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv",
-        "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv",
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv',
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv',
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_ub.csv',
+        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_lb.csv',
     ],
 }
+
+const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
+const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
 
 // custom plugin for tooltip and vertical + horizontal guidelines on hover
 const hoverLinePlugin = {
@@ -45,7 +46,7 @@ const hoverLinePlugin = {
             ctx.save()
             ctx.beginPath()
             ctx.lineWidth = 3
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.5)"
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
             ctx.setLineDash([6, 4])
             ctx.moveTo(xCoor, yCoor)
             ctx.lineTo(xCoor, bottom)
@@ -53,7 +54,7 @@ const hoverLinePlugin = {
             ctx.closePath()
             ctx.beginPath()
             ctx.lineWidth = 3
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.5)"
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
             ctx.setLineDash([6, 4])
             ctx.moveTo(xCoor, yCoor)
             ctx.lineTo(left, yCoor)
@@ -66,30 +67,35 @@ const hoverLinePlugin = {
 
 function linetest() {
     const [fileState, setFileState] = useState({
-        name: "cases",
-        urls: fileList["cases"],
+        name: 'cases',
+        urls: fileList['cases'],
     })
 
     const [chartState, setChartState] = useState({
-        cum_or_inc: "cum",
-        category: "", // category of labels ie. country
+        cum_or_inc: 'cum',
+        category: '', // category of labels ie. country
+        current_label: '', // current label to be displayed
         labels: [], // list of labels (ie. countries)
-        dates: [], // list of dates
         cases: {
             // cases, actual and predictive, each index is a list of cases
-            actual: [],
-            pred: [],
+            actual: {
+                cases: [],
+                dates: [],
+            },
+            pred: {
+                cases: [],
+                dates: [],
+            },
         },
         current_dataset: {
             // current dataset to be displayed
-            labels: [], // dates (x axis)
             datasets: [
                 // list of datasets, more can be added to display different lines on the same chart
                 {
-                    label: "loading data",
+                    label: 'loading data',
                     data: [], // cases (y axis)
                     fill: false,
-                    borderColor: "rgb(75, 192, 192)",
+                    borderColor: 'rgb(75, 192, 192)',
                     tension: 0.1,
                 },
             ],
@@ -98,77 +104,108 @@ function linetest() {
 
     // fetch data from the actual data file
     const fetchData = async () => {
-        let data = []
-        let allDates = []
+        let datasets = []
+
+        let allBaseData = []
+        let baseDates = []
+        let category = ''
+
+        let allPredData = []
+        let predDates = []
+        let labels = []
+
+        // set the colors for the actual and predictive data
+
+        for (let i = 1; i < fileState.urls.length; ++i) {
+            await axios.get(fileState.urls[i]).then((response) => {
+                readString(response.data, {
+                    worker: true,
+                    complete: (results) => {
+                        let cases = []
+                        let predData = []
+
+                        // get label and cases array at each label
+                        for (let j = 1; j < results.data.length; ++j) {
+                            if (results.data[j].length > 2) {
+                                labels[j - 1] = results.data[j][1] // get the label
+                                cases.push(results.data[j].slice(2)) // slice to remove the id and label from cases array
+                            }
+                        }
+
+                        predDates.push(results.data[0].slice(2)) // slice to remove the id and label from dates array
+                        allPredData.push(cases)
+
+                        for (let j = 0; j < cases[0].length; ++j) {
+                            predData.push({
+                                x: predDates[i - 1][j],
+                                y: cases[0][j],
+                            })
+                        }
+
+                        datasets.push({
+                            label: datasetLabels[i],
+                            data: predData,
+                            fill: false,
+                            tension: 0.1,
+                            borderColor: lineColorList[i],
+                            backgroundColor: lineColorList[i],
+                        })
+                    },
+                })
+            })
+        }
+
         await axios.get(fileState.urls[0]).then((response) => {
             readString(response.data, {
                 worker: true,
                 complete: (results) => {
                     let cases = []
+                    let baseData = []
+
+                    category = results.data[0][1]
 
                     // get cases array at each label
                     for (let i = 1; i < results.data.length; ++i) {
-                        if (results.data[i].length > 2)
-                            cases.push(results.data[i].slice(2)) // slice to remove the id and label from cases array
+                        if (results.data[i].length > 2) cases.push(results.data[i].slice(2)) // slice to remove the id and label from cases array
                     }
 
-                    allDates = results.data[0].slice(2) // slice to remove the id and label from dates array
+                    baseDates = results.data[0].slice(2) // slice to remove the id and label from dates array
+                    allBaseData = cases
 
-                    data.push(cases)
-                },
-            })
-        })
-
-        // fetch data from the corresponding predictive data file
-        await axios.get(fileState.urls[1]).then((response) => {
-            readString(response.data, {
-                worker: true,
-                complete: (results) => {
-                    let labels = []
-                    let cases = []
-
-                    // get label and cases array at each label
-                    for (let i = 1; i < results.data.length; ++i) {
-                        if (results.data[i].length > 2) {
-                            labels[i - 1] = results.data[i][1] // get the label
-                            cases.push(results.data[i].slice(2)) // slice to remove the id and label from cases array
-                        }
+                    for (let i = 0; i < baseDates.length; ++i) {
+                        baseData.push({
+                            x: baseDates[i],
+                            y: cases[0][i],
+                        })
                     }
 
-                    allDates = allDates.concat(results.data[0].slice(2)) // slice to remove the id and label from dates array
-
-                    data.push(cases)
-
-                    // set the colors for the actual and predictive data
-                    let color1 = new Array(data[0][0].length).fill(
-                        "rgb(75, 192, 192)"
-                    )
-                    let color2 = new Array(data[1][0].length).fill(
-                        "rgba(255, 191, 48)"
-                    )
+                    datasets.unshift({
+                        label: datasetLabels[0],
+                        data: baseData,
+                        fill: false,
+                        tension: 0.1,
+                        borderColor: lineColorList[0],
+                        backgroundColor: lineColorList[0],
+                    })
 
                     setChartState({
                         // set the chart state
                         ...chartState,
-                        category: results.data[0][1],
+                        category: category,
+                        current_label: labels[0],
                         labels: labels,
-                        dates: allDates,
                         cases: {
-                            actual: data[0],
-                            pred: data[1],
+                            actual: {
+                                cases: allBaseData,
+                                dates: baseDates,
+                            },
+                            pred: {
+                                cases: allPredData,
+                                dates: predDates,
+                            },
                         },
                         current_dataset: {
-                            labels: allDates,
-                            datasets: [
-                                {
-                                    label: labels[0],
-                                    data: data[0][0].concat(data[1][0]), // concat the actual and predictive data
-                                    fill: false,
-                                    tension: 0.1,
-                                    borderColor: color1.concat(color2),
-                                    backgroundColor: color1.concat(color2),
-                                },
-                            ],
+                            datasets: datasets,
                         },
                     })
                 },
@@ -181,6 +218,68 @@ function linetest() {
         fetchData()
     }, [fileState])
 
+    const getBaseData = (index) => {
+        let baseData = []
+
+        for (let j = 0; j < chartState.cases['actual']['dates'].length; ++j) {
+            baseData.push({
+                x: chartState.cases['actual']['dates'][j],
+                y: chartState.cases['actual']['cases'][index][j],
+            })
+        }
+
+        return baseData
+    }
+
+    const getPredData = (index) => {
+        let allPredData = []
+
+        for (let j = 0; j < chartState.cases['pred']['cases'].length; ++j) {
+            let predData = []
+
+            // loop through each date in the predictive dataset
+            for (let k = 0; k < chartState.cases['pred']['dates'][j][index].length; ++k) {
+                predData.push({
+                    x: chartState.cases['pred']['dates'][j][k],
+                    y: chartState.cases['pred']['cases'][j][index][k],
+                })
+            }
+
+            allPredData.push(predData)
+        }
+
+        return allPredData
+    }
+
+    const generateDatasets = (index) => {
+        let datasets = []
+
+        const baseData = getBaseData(index)
+        const predData = getPredData(index)
+
+        datasets.push({
+            label: datasetLabels[0],
+            data: baseData,
+            fill: false,
+            tension: 0.1,
+            borderColor: lineColorList[0],
+            backgroundColor: lineColorList[0],
+        })
+
+        for (let i = 0; i < predData.length; ++i) {
+            datasets.push({
+                label: datasetLabels[i + 1],
+                data: predData[i],
+                fill: false,
+                tension: 0.1,
+                borderColor: lineColorList[i + 1],
+                backgroundColor: lineColorList[i + 1],
+            })
+        }
+
+        return datasets
+    }
+
     // file change handler
     const handleFileChange = (e) => {
         const newFile = e.target.value
@@ -190,7 +289,7 @@ function linetest() {
         })
         setChartState({
             ...chartState,
-            cum_or_inc: "cum",
+            cum_or_inc: 'cum',
         })
     }
 
@@ -199,40 +298,17 @@ function linetest() {
         const newLabel = e.target.value // get the selected label (ie. country)
         let i
 
-        for (
-            i = 0;
-            i < chartState.labels.length;
-            ++i // find the index of the label
-        )
-            if (chartState.labels[i] === newLabel) break
+        if (newLabel == chartState.current_label) return
 
-        // set colors for the actual and predicted data
-        let color1 = new Array(chartState.cases["actual"][i].length).fill(
-            "rgb(75, 192, 192)"
-        )
-        let color2 = new Array(chartState.cases["pred"][i].length).fill(
-            "rgba(255, 191, 48)"
-        )
+        // find the index of the label
+        for (i = 0; i < chartState.labels.length; ++i) if (chartState.labels[i] === newLabel) break
 
         setChartState({
-            // update the chart state
             ...chartState,
-            cum_or_inc: "cum",
+            cum_or_inc: 'cum',
+            current_label: newLabel,
             current_dataset: {
-                labels: chartState.dates,
-                datasets: [
-                    {
-                        label: newLabel,
-                        data: chartState.cases["actual"][i].concat(
-                            // get the new data from index
-                            chartState.cases["pred"][i]
-                        ),
-                        fill: false,
-                        tension: 0.1,
-                        borderColor: color1.concat(color2),
-                        backgroundColor: color1.concat(color2),
-                    },
-                ],
+                datasets: generateDatasets(i),
             },
         })
     }
@@ -240,73 +316,99 @@ function linetest() {
     // umulative or incremental change handler
     const handleCumOrIncChange = (e) => {
         const cumOrInc = e.target.value // get the selected value
-        const currentDataset = chartState.current_dataset
-        const currentData = currentDataset.datasets[0]
         let i
 
-        for (
-            i = 0;
-            i < chartState.labels.length;
-            ++i // find the index of the label
-        )
-            if (chartState.labels[i] === currentData.label) break
+        if (cumOrInc == chartState.cum_or_inc) return
+
+        // find the index of the label
+        for (i = 0; i < chartState.labels.length; ++i) if (chartState.labels[i] === chartState.current_label) break
 
         let data = []
 
-        if (cumOrInc === "cum") {
-            // if cumulative, just fetch the data from the state
-            data = chartState.cases["actual"][i].concat(
-                chartState.cases["pred"][i]
-            )
+        if (cumOrInc === 'cum') {
+            setChartState({
+                ...chartState,
+                cum_or_inc: 'cum',
+                current_dataset: {
+                    datasets: generateDatasets(i),
+                },
+            })
         } else {
             // if incremental, calculate the difference between consecutive values
+            const baseData = getBaseData(i)
+            const predData = getPredData(i)
+            let baseDiffData = []
+            let predDiffData = []
+            let datasets = []
             let diff = 0
 
-            for (let i = 1; i < currentData.data.length; ++i) {
-                diff = currentData.data[i] - currentData.data[i - 1]
-                if (
-                    diff >= 0 &&
-                    currentData.data[i - 1] > 0 &&
-                    currentDataset.labels[i]
-                )
-                    data.push(diff)
-                else data.push(0)
+            for (let i = 1; i < baseData.length; ++i) {
+                diff = baseData[i]['y'] - baseData[i - 1]['y']
+                if (diff < 0 || baseData[i - 1]['y'] <= 0) diff = 0
+
+                baseDiffData.push({
+                    x: baseData[i]['x'],
+                    y: diff,
+                })
             }
+
+            if (predData.length > 0) {
+                diff = predData[0][0]['y'] - baseData[baseData.length - 1]['y']
+                if (diff < 0 || baseData[baseData.length - 1]['y'] <= 0) diff = 0
+
+                predDiffData.push({
+                    x: baseDiffData[baseDiffData.length - 1]['x'],
+                    y: baseDiffData[baseDiffData.length - 1]['y'],
+                })
+
+                predDiffData.push({
+                    x: predData[0][0]['x'],
+                    y: diff,
+                })
+
+                for (let i = 1; i < predData[0].length; ++i) {
+                    diff = predData[0][i]['y'] - predData[0][i - 1]['y']
+                    if (diff < 0 || baseData[i - 1]['y'] <= 0) diff = 0
+
+                    predDiffData.push({
+                        x: predData[0][i]['x'],
+                        y: diff,
+                    })
+                }
+            }
+
+            datasets.push({
+                label: 'Actual Diff',
+                data: baseDiffData,
+                fill: false,
+                tension: 0.1,
+                borderColor: lineColorList[0],
+                backgroundColor: lineColorList[0],
+            })
+
+            datasets.push({
+                label: 'Predictive Diff',
+                data: predDiffData,
+                fill: false,
+                tension: 0.1,
+                borderColor: lineColorList[1],
+                backgroundColor: lineColorList[1],
+            })
+
+            setChartState({
+                ...chartState,
+                cum_or_inc: 'inc',
+                current_dataset: {
+                    datasets: datasets,
+                },
+            })
         }
-
-        // set colors for the actual and predicted data
-        let color1 = new Array(chartState.cases["actual"][i].length).fill(
-            "rgb(75, 192, 192)"
-        )
-        let color2 = new Array(chartState.cases["pred"][i].length).fill(
-            "rgba(255, 191, 48)"
-        )
-
-        // create a new dataset with the new data
-        const modifiedDataset = {
-            label: currentData.label,
-            data: data,
-            fill: false,
-            tension: 0.1,
-            borderColor: color1.concat(color2),
-            backgroundColor: color1.concat(color2),
-        }
-
-        setChartState({
-            // update the chart state
-            ...chartState,
-            cum_or_inc: cumOrInc,
-            current_dataset: {
-                labels: currentDataset.labels,
-                datasets: [modifiedDataset], // replace the old dataset with the new one
-            },
-        })
     }
 
     return (
         <div>
             <div className="menu">
-                <FormControl sx={{ mr: "20px" }}>
+                <FormControl sx={{ mr: '20px' }}>
                     <InputLabel id="input-label">File</InputLabel>
                     <Select
                         labelId="file-id"
@@ -316,20 +418,16 @@ function linetest() {
                         onChange={handleFileChange}
                     >
                         {Object.keys(fileList).map((fileName) => {
-                            return (
-                                <MenuItem value={fileName}>{fileName}</MenuItem>
-                            )
+                            return <MenuItem value={fileName}>{fileName}</MenuItem>
                         })}
                     </Select>
                 </FormControl>
-                <FormControl sx={{ mr: "20px" }}>
-                    <InputLabel id="input-label">
-                        {chartState.category}
-                    </InputLabel>
+                <FormControl sx={{ mr: '20px' }}>
+                    <InputLabel id="input-label">{chartState.category}</InputLabel>
                     <Select
                         labelId="label-id"
                         id="select"
-                        value={chartState.current_dataset.datasets[0].label}
+                        value={chartState.current_label}
                         label="category"
                         onChange={handleLabelChange}
                     >
@@ -353,6 +451,16 @@ function linetest() {
                     type="line"
                     data={chartState.current_dataset}
                     plugins={[hoverLinePlugin, zoomPlugin]}
+                    options={{
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'week',
+                                },
+                            },
+                        },
+                    }}
                 />
             </div>
         </div>

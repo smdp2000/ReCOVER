@@ -29,6 +29,77 @@ const fileList = {
 const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
 const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
 
+// const metadataUrls = [
+//     "https://raw.githubusercontent.com/rangshah/401-CSV-Repository/main/metadata.txt",
+// ];
+
+// function parseMetadata(metadata) {
+//     const regex = /@\w+\{([^}]+)\}/g;
+//     let match;
+//     const items = [];
+
+//     while ((match = regex.exec(metadata)) !== null) {
+//         const item = {};
+//         const properties = match[1].split('\n').map(s => s.trim()).filter(s => s.length > 0);
+
+//         for (const property of properties) {
+//             const [key, value] = property.split('=').map(s => s.trim());
+//             const cleanedValue = value.replace(/["{}]/g, '');
+//             switch (key) {
+//                 case 'url':
+//                     item.url = cleanedValue;
+//                     break;
+//                 case 'url_lower':
+//                     item.url_lower = cleanedValue;
+//                     break;
+//                 case 'url_upper':
+//                     item.url_upper = cleanedValue;
+//                     break;
+//                 case 'url_quantile':
+//                     item.url_quantile = cleanedValue;
+//                     break;
+//                 case 'target':
+//                     item.target = cleanedValue;
+//                     break;
+//                 case 'data_type':
+//                     item.data_type = cleanedValue;
+//                     break;
+//                 case 'data_level':
+//                     item.data_level = cleanedValue;
+//                     break;
+//                 case 'data_period':
+//                     item.data_period = cleanedValue;
+//                     break;
+//             }
+//         }
+
+//         items.push(item);
+//     }
+
+//     return items;
+// }
+
+// const fetchMetadataContent = async (url) => {
+//     try {
+//         const response = await axios.get(url);
+//         return response.data;
+//     } catch (error) {
+//         console.error(`Failed to fetch metadata content from URL: ${url}`);
+//         return "";
+//     }
+// };
+
+// (async () => {
+//     const metadataContentPromises = metadataUrls.map(fetchMetadataContent);
+//     const metadataContents = await Promise.all(metadataContentPromises);
+
+//     const metadata = (
+//         await Promise.all(metadataContents.map(parseMetadata))
+//     ).flat();
+
+//     console.log(metadata);
+// })();
+
 // custom plugin for tooltip and vertical + horizontal guidelines on hover
 const hoverLinePlugin = {
     afterDatasetsDraw(chart) {

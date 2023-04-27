@@ -10,95 +10,92 @@ const zoomPlugin = dynamic(() => import('chartjs-plugin-zoom'), {
     ssr: false,
 })
 
-const fileList = {
-    // first index is actual, second is predictive, third is upper bound, fourth is lower bound
-    cases: [
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv',
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv',
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_ub.csv',
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_lb.csv',
-    ],
-    deaths: [
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv',
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv',
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_ub.csv',
-        'https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_lb.csv',
-    ],
-}
-
+// INTIALIZIE VIA USE EFFECT
+let globalMetadata = [];
+let fileList = {}
 const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
 const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
 
-// const metadataUrls = [
-//     "https://raw.githubusercontent.com/rangshah/401-CSV-Repository/main/metadata.txt",
-// ];
+const metadataUrl = "https://raw.githubusercontent.com/davidhkang/401TEMP/main/metadata.txt";
 
-// function parseMetadata(metadata) {
-//     const regex = /@\w+\{([^}]+)\}/g;
-//     let match;
-//     const items = [];
+function parseMetadata(metadata) {
+    const regex = /@\w+\{([^}]+)\}/g;
+    let match;
+    const items = [];
 
-//     while ((match = regex.exec(metadata)) !== null) {
-//         const item = {};
-//         const properties = match[1].split('\n').map(s => s.trim()).filter(s => s.length > 0);
+    while ((match = regex.exec(metadata)) !== null) {
+        const item = {};
+        const properties = match[1].split('\n').map(s => s.trim()).filter(s => s.length > 0);
 
-//         for (const property of properties) {
-//             const [key, value] = property.split('=').map(s => s.trim());
-//             const cleanedValue = value.replace(/["{}]/g, '');
-//             switch (key) {
-//                 case 'url':
-//                     item.url = cleanedValue;
-//                     break;
-//                 case 'url_lower':
-//                     item.url_lower = cleanedValue;
-//                     break;
-//                 case 'url_upper':
-//                     item.url_upper = cleanedValue;
-//                     break;
-//                 case 'url_quantile':
-//                     item.url_quantile = cleanedValue;
-//                     break;
-//                 case 'target':
-//                     item.target = cleanedValue;
-//                     break;
-//                 case 'data_type':
-//                     item.data_type = cleanedValue;
-//                     break;
-//                 case 'data_level':
-//                     item.data_level = cleanedValue;
-//                     break;
-//                 case 'data_period':
-//                     item.data_period = cleanedValue;
-//                     break;
-//             }
-//         }
+        for (const property of properties) {
+            const [key, value] = property.split('=').map(s => s.trim());
+            const cleanedValue = value.replace(/["{}]/g, '');
+            switch (key) {
+                case 'url':
+                    item.url = cleanedValue;
+                    break;
+                case 'url_lower':
+                    item.url_lower = cleanedValue;
+                    break;
+                case 'url_upper':
+                    item.url_upper = cleanedValue;
+                    break;
+                case 'url_quantile':
+                    item.url_quantile = cleanedValue;
+                    break;
+                case 'target':
+                    item.target = cleanedValue;
+                    break;
+                case 'data_type':
+                    item.data_type = cleanedValue;
+                    break;
+                case 'data_level':
+                    item.data_level = cleanedValue;
+                    break;
+                case 'data_period':
+                    item.data_period = cleanedValue;
+                    break;
+            }
+        }
 
-//         items.push(item);
-//     }
+        items.push(item);
+    }
 
-//     return items;
-// }
+    return items;
+}
 
-// const fetchMetadataContent = async (url) => {
-//     try {
-//         const response = await axios.get(url);
-//         return response.data;
-//     } catch (error) {
-//         console.error(`Failed to fetch metadata content from URL: ${url}`);
-//         return "";
-//     }
-// };
+const fetchMetadataContent = async (url) => {
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to fetch metadata content from URL: ${url}`);
+        return "";
+    }
+};
 
-// (async () => {
-//     const metadataContentPromises = metadataUrls.map(fetchMetadataContent);
-//     const metadataContents = await Promise.all(metadataContentPromises);
 
-//     const metadata = (
-//         await Promise.all(metadataContents.map(parseMetadata))
-//     ).flat();
+const getMetadata = async () => {
+    const metadataContent = await fetchMetadataContent(metadataUrl);
+    const metadata = (
+        await parseMetadata(metadataContent)
+    ).flat();
+    console.log(metadata)
+    return metadata;
+};
 
-//     console.log(metadata);
-// })();
+const getUrls = () => {
+    let urlObj = {}
+    globalMetadata.forEach(item => {
+        let urls = [];
+        urls.push(item.url);
+        if ('url_lower' in item) urls.push(item.url_lower)
+        if ('url_upper' in item) urls.push(item.url_upper)
+        if ('url_quantile' in item) urls.push(item.url_quantile)
+        urlObj[item.target] = urls;
+    });
+    return urlObj;
+}
 
 // custom plugin for tooltip and vertical + horizontal guidelines on hover
 const hoverLinePlugin = {
@@ -136,11 +133,26 @@ const hoverLinePlugin = {
     },
 }
 
+
 function linetest() {
     const [fileState, setFileState] = useState({
-        name: 'cases',
-        urls: fileList['cases'],
+        name: "",
+        urls: [],
     })
+    
+    useEffect(() => {
+        getMetadata().then((result) => {
+            globalMetadata = result;
+            fileList = getUrls();
+            console.log(fileList);
+            const initalFileName = globalMetadata[0].target;
+            setFileState({
+                name: initalFileName,
+                urls: fileList[initalFileName]
+            });
+        });
+    }, [])
+
 
     const [chartState, setChartState] = useState({
         cum_or_inc: 'cum',
@@ -175,6 +187,8 @@ function linetest() {
 
     // fetch data from the actual data file
     const fetchData = async () => {
+        if (fileState.name === "") return;
+
         let datasets = []
 
         let allBaseData = []
@@ -286,7 +300,7 @@ function linetest() {
 
     // fetch data on file change
     useEffect(() => {
-        fetchData()
+        fetchData() 
     }, [fileState])
 
     const getBaseData = (index) => {

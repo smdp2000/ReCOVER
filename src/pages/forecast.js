@@ -30,32 +30,7 @@ function parseMetadata(metadata) {
         for (const property of properties) {
             const [key, value] = property.split('=').map(s => s.trim());
             const cleanedValue = value.replace(/["{}]/g, '');
-            switch (key) {
-                case 'url':
-                    item.url = cleanedValue;
-                    break;
-                case 'url_lower':
-                    item.url_lower = cleanedValue;
-                    break;
-                case 'url_upper':
-                    item.url_upper = cleanedValue;
-                    break;
-                case 'url_quantile':
-                    item.url_quantile = cleanedValue;
-                    break;
-                case 'target':
-                    item.target = cleanedValue;
-                    break;
-                case 'data_type':
-                    item.data_type = cleanedValue;
-                    break;
-                case 'data_level':
-                    item.data_level = cleanedValue;
-                    break;
-                case 'data_period':
-                    item.data_period = cleanedValue;
-                    break;
-            }
+            item[key] = cleanedValue
         }
 
         items.push(item);

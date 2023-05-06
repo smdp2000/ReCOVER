@@ -1,0 +1,26 @@
+@evaluation{
+    url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv"
+    url_quantile = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv"
+    url_upper = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_ub.csv"
+    url_lower = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_lb.csv"
+    target = cases
+    data_type = ground_truth
+    data_period = weekly
+    data_level = state_level
+    prediction_period = 1 week ahead
+    measure = MAE
+}
+
+@evaluation{
+    url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv"
+    url_quantile = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv"
+    url_upper = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_ub.csv"
+    url_lower = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_lb.csv"
+    target = deaths
+    data_type = ground_truth
+    data_period = weekly
+    data_level = state_level
+    prediction_period = 1 week ahead
+    measure = MAE
+}
+

@@ -1,135 +1,133 @@
 import { useState, useEffect } from 'react'
 import 'chart.js/auto'
 import 'chartjs-adapter-date-fns'
-import { Chart } from 'react-chartjs-2'
+import { Line } from 'react-chartjs-2'
 import { readString } from 'react-papaparse'
 import axios from 'axios'
-import { FormControl, InputLabel, Select, MenuItem, ToggleButtonGroup, ToggleButton } from '@mui/material'
+import {
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    ToggleButtonGroup,
+    ToggleButton,
+    Switch,
+    Typography,
+} from '@mui/material'
 import dynamic from 'next/dynamic'
 const zoomPlugin = dynamic(() => import('chartjs-plugin-zoom'), {
     ssr: false,
 })
 
 // INTIALIZIE VIA USE EFFECT
-let globalMetadata = [];
+let globalMetadata = []
 let fileList = {}
-const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
+// const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
 const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
 
-const metadataUrl = "https://raw.githubusercontent.com/davidhkang/401TEMP/main/metadata.txt";
-
 function parseMetadata(metadata) {
-    const regex = /@\w+\{([^}]+)\}/g;
-    let match;
-    const items = [];
+    const regex = /@\w+\{([^}]+)\}/g
+    let match
+    const items = []
 
     while ((match = regex.exec(metadata)) !== null) {
-        const item = {};
-        const properties = match[1].split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        const item = {}
+        const properties = match[1]
+            .split('\n')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
 
         for (const property of properties) {
-            const [key, value] = property.split('=').map(s => s.trim());
-            const cleanedValue = value.replace(/["{}]/g, '');
+            const [key, value] = property.split('=').map((s) => s.trim())
+            const cleanedValue = value.replace(/["{}]/g, '')
             item[key] = cleanedValue
         }
 
-        items.push(item);
+        items.push(item)
     }
 
-    return items;
+    return items
 }
 
-const fetchMetadataContent = async (url) => {
-    try {
-        const response = await axios.get(url);
-        return response.data;
-    } catch (error) {
-        console.error(`Failed to fetch metadata content from URL: ${url}`);
-        return "";
-    }
-};
-
-
 const getMetadata = async () => {
-    const metadataContent = await fetchMetadataContent(metadataUrl);
-    const metadata = (
-        await parseMetadata(metadataContent)
-    ).flat();
+    const metadataResponse = await fetch('/metadata.txt')
+    const metadataContent = await metadataResponse.text()
+    console.log(metadataContent)
+    const metadata = parseMetadata(metadataContent).flat()
     console.log(metadata)
-    return metadata;
-};
+    return metadata
+}
 
 const getUrls = () => {
     let urlObj = {}
-    globalMetadata.forEach(item => {
-        let urls = [];
-        urls.push(item.url);
+    globalMetadata.forEach((item) => {
+        let urls = []
+        urls.push(item.url)
         if ('url_lower' in item) urls.push(item.url_lower)
         if ('url_upper' in item) urls.push(item.url_upper)
         if ('url_quantile' in item) urls.push(item.url_quantile)
-        urlObj[item.target] = urls;
-    });
-    return urlObj;
+        urlObj[item.target] = urls
+    })
+    return urlObj
 }
 
 // custom plugin for tooltip and vertical + horizontal guidelines on hover
-const hoverLinePlugin = {
-    afterDatasetsDraw(chart) {
-        const {
-            ctx,
-            tooltip,
-            chartArea: { bottom, left },
-            scales: { x, y },
-        } = chart
+// const hoverLinePlugin = {
+//     afterDatasetsDraw(chart) {
+//         const {
+//             ctx,
+//             tooltip,
+//             chartArea: { bottom, left },
+//             scales: { x, y },
+//         } = chart
 
-        if (tooltip && tooltip._active.length > 0) {
-            const xCoor = x.getPixelForValue(tooltip.dataPoints[0].dataIndex)
-            const yCoor = y.getPixelForValue(tooltip.dataPoints[0].parsed.y)
+//         if (tooltip && tooltip._active.length > 0) {
+//             const xCoor = x.getPixelForValue(tooltip.dataPoints[0].dataIndex)
+//             const yCoor = y.getPixelForValue(tooltip.dataPoints[0].parsed.y)
 
-            ctx.save()
-            ctx.beginPath()
-            ctx.lineWidth = 3
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
-            ctx.setLineDash([6, 4])
-            ctx.moveTo(xCoor, yCoor)
-            ctx.lineTo(xCoor, bottom)
-            ctx.stroke()
-            ctx.closePath()
-            ctx.beginPath()
-            ctx.lineWidth = 3
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
-            ctx.setLineDash([6, 4])
-            ctx.moveTo(xCoor, yCoor)
-            ctx.lineTo(left, yCoor)
-            ctx.stroke()
-            ctx.closePath()
-            ctx.setLineDash([])
-        }
-    },
-}
-
+//             ctx.save()
+//             ctx.beginPath()
+//             ctx.lineWidth = 3
+//             ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
+//             ctx.setLineDash([6, 4])
+//             ctx.moveTo(xCoor, yCoor)
+//             ctx.lineTo(xCoor, bottom)
+//             ctx.stroke()
+//             ctx.closePath()
+//             ctx.beginPath()
+//             ctx.lineWidth = 3
+//             ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'
+//             ctx.setLineDash([6, 4])
+//             ctx.moveTo(xCoor, yCoor)
+//             ctx.lineTo(left, yCoor)
+//             ctx.stroke()
+//             ctx.closePath()
+//             ctx.setLineDash([])
+//         }
+//     },
+// }
 
 function linetest() {
     const [fileState, setFileState] = useState({
-        name: "",
+        name: '',
         urls: [],
     })
-    
+
     useEffect(() => {
+        // fetch('/metadata.txt').then((response) => response.text().then((text) => console.log(text)))
         getMetadata().then((result) => {
-            globalMetadata = result;
-            fileList = getUrls();
-            console.log(fileList);
-            const initalFileName = globalMetadata[0].target;
+            globalMetadata = result
+            fileList = getUrls()
+            const initalFileName = globalMetadata[0].target
             setFileState({
                 name: initalFileName,
-                urls: fileList[initalFileName]
-            });
-        });
+                urls: fileList[initalFileName],
+            })
+        })
     }, [])
 
-
     const [chartState, setChartState] = useState({
+        multiple_plot: false,
         cum_or_inc: 'cum',
         category: '', // category of labels ie. country
         current_label: '', // current label to be displayed
@@ -153,7 +151,6 @@ function linetest() {
                     label: 'loading data',
                     data: [], // cases (y axis)
                     fill: false,
-                    borderColor: 'rgb(75, 192, 192)',
                     tension: 0.1,
                 },
             ],
@@ -162,7 +159,7 @@ function linetest() {
 
     // fetch data from the actual data file
     const fetchData = async () => {
-        if (fileState.name === "") return;
+        if (fileState.name === '') return
 
         let datasets = []
 
@@ -203,12 +200,12 @@ function linetest() {
                         }
 
                         datasets.push({
-                            label: datasetLabels[i],
+                            label: labels[0] + ' ' + datasetLabels[i],
                             data: predData,
                             fill: false,
                             tension: 0.1,
-                            borderColor: lineColorList[i],
-                            backgroundColor: lineColorList[i],
+                            // borderColor: lineColorList[i],
+                            // backgroundColor: lineColorList[i],
                         })
                     },
                 })
@@ -240,12 +237,12 @@ function linetest() {
                     }
 
                     datasets.unshift({
-                        label: datasetLabels[0],
+                        label: labels[0] + ' ' + datasetLabels[0],
                         data: baseData,
                         fill: false,
                         tension: 0.1,
-                        borderColor: lineColorList[0],
-                        backgroundColor: lineColorList[0],
+                        // borderColor: lineColorList[0],
+                        // backgroundColor: lineColorList[0],
                     })
 
                     setChartState({
@@ -275,7 +272,7 @@ function linetest() {
 
     // fetch data on file change
     useEffect(() => {
-        fetchData() 
+        fetchData()
     }, [fileState])
 
     const getBaseData = (index) => {
@@ -318,22 +315,22 @@ function linetest() {
         const predData = getPredData(index)
 
         datasets.push({
-            label: datasetLabels[0],
+            label: chartState.labels[index] + ' ' + datasetLabels[0],
             data: baseData,
             fill: false,
             tension: 0.1,
-            borderColor: lineColorList[0],
-            backgroundColor: lineColorList[0],
+            // borderColor: lineColorList[0],
+            // backgroundColor: lineColorList[0],
         })
 
         for (let i = 0; i < predData.length; ++i) {
             datasets.push({
-                label: datasetLabels[i + 1],
+                label: chartState.labels[index] + ' ' + datasetLabels[i + 1],
                 data: predData[i],
                 fill: false,
                 tension: 0.1,
-                borderColor: lineColorList[i + 1],
-                backgroundColor: lineColorList[i + 1],
+                // borderColor: lineColorList[i + 1],
+                // backgroundColor: lineColorList[i + 1],
             })
         }
 
@@ -360,17 +357,45 @@ function linetest() {
 
         if (newLabel == chartState.current_label) return
 
+        for (let j = 0; j < chartState.current_dataset.datasets.length; ++j) {
+            if (chartState.current_dataset.datasets[j].label.includes(newLabel)) {
+                setChartState({
+                    ...chartState,
+                    current_label: newLabel,
+                })
+                return
+            }
+        }
+
         // find the index of the label
         for (i = 0; i < chartState.labels.length; ++i) if (chartState.labels[i] === newLabel) break
 
-        setChartState({
-            ...chartState,
-            cum_or_inc: 'cum',
-            current_label: newLabel,
-            current_dataset: {
-                datasets: generateDatasets(i),
-            },
-        })
+        const newDataset = generateDatasets(i)
+
+        if (chartState.multiple_plot) {
+            let datasets = chartState.current_dataset.datasets
+            datasets = datasets.concat(newDataset)
+
+            console.log(datasets)
+
+            setChartState({
+                ...chartState,
+                cum_or_inc: 'cum',
+                current_label: newLabel,
+                current_dataset: {
+                    datasets: datasets,
+                },
+            })
+        } else {
+            setChartState({
+                ...chartState,
+                cum_or_inc: 'cum',
+                current_label: newLabel,
+                current_dataset: {
+                    datasets: newDataset,
+                },
+            })
+        }
     }
 
     // umulative or incremental change handler
@@ -382,8 +407,6 @@ function linetest() {
 
         // find the index of the label
         for (i = 0; i < chartState.labels.length; ++i) if (chartState.labels[i] === chartState.current_label) break
-
-        let data = []
 
         if (cumOrInc === 'cum') {
             setChartState({
@@ -442,8 +465,8 @@ function linetest() {
                 data: baseDiffData,
                 fill: false,
                 tension: 0.1,
-                borderColor: lineColorList[0],
-                backgroundColor: lineColorList[0],
+                // borderColor: lineColorList[0],
+                // backgroundColor: lineColorList[0],
             })
 
             datasets.push({
@@ -451,8 +474,8 @@ function linetest() {
                 data: predDiffData,
                 fill: false,
                 tension: 0.1,
-                borderColor: lineColorList[1],
-                backgroundColor: lineColorList[1],
+                // borderColor: lineColorList[1],
+                // backgroundColor: lineColorList[1],
             })
 
             setChartState({
@@ -461,6 +484,29 @@ function linetest() {
                 current_dataset: {
                     datasets: datasets,
                 },
+            })
+        }
+    }
+
+    const handleMultiplePlotChange = () => {
+        const isMultiplePlot = chartState.multiple_plot
+
+        if (isMultiplePlot) {
+            const datasets = generateDatasets(chartState.labels.indexOf(chartState.current_label))
+
+            console.log(datasets)
+
+            setChartState({
+                ...chartState,
+                multiple_plot: !isMultiplePlot,
+                current_dataset: {
+                    datasets: datasets,
+                },
+            })
+        } else {
+            setChartState({
+                ...chartState,
+                multiple_plot: !isMultiplePlot,
             })
         }
     }
@@ -505,12 +551,19 @@ function linetest() {
                     <ToggleButton value="cum">Cumulative</ToggleButton>
                     <ToggleButton value="inc"> Weekly New</ToggleButton>
                 </ToggleButtonGroup>
+                <Typography ml={2} display="inline">
+                    Multiple Lines
+                </Typography>
+                <Switch
+                    checked={chartState.multiple_plot}
+                    onChange={handleMultiplePlotChange}
+                    inputProps={{ 'aria-label': 'controlled' }}
+                />
             </div>
-            <div className="chart">
-                <Chart
-                    type="line"
+            <div className="chart" style={{ width: '90vw' }}>
+                <Line
                     data={chartState.current_dataset}
-                    plugins={[hoverLinePlugin, zoomPlugin]}
+                    // plugins={[hoverLinePlugin]}
                     options={{
                         scales: {
                             x: {
@@ -520,6 +573,10 @@ function linetest() {
                                 },
                             },
                         },
+                        colors: {
+                            enabled: true,
+                        },
+                        responsive: true,
                     }}
                 />
             </div>

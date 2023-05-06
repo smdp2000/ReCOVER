@@ -107,7 +107,7 @@ const getUrls = () => {
 //     },
 // }
 
-function linetest() {
+function Forecast() {
     const [fileState, setFileState] = useState({
         name: '',
         urls: [],
@@ -523,8 +523,12 @@ function linetest() {
                         label="category"
                         onChange={handleFileChange}
                     >
-                        {Object.keys(fileList).map((fileName) => {
-                            return <MenuItem value={fileName}>{fileName}</MenuItem>
+                        {Object.keys(fileList).map((fileName, index) => {
+                            return (
+                                <MenuItem key={index} value={fileName}>
+                                    {fileName}
+                                </MenuItem>
+                            )
                         })}
                     </Select>
                 </FormControl>
@@ -537,8 +541,12 @@ function linetest() {
                         label="category"
                         onChange={handleLabelChange}
                     >
-                        {chartState.labels.map((label) => {
-                            return <MenuItem value={label}>{label}</MenuItem>
+                        {chartState.labels.map((label, index) => {
+                            return (
+                                <MenuItem key={index} value={label}>
+                                    {label}
+                                </MenuItem>
+                            )
                         })}
                     </Select>
                 </FormControl>
@@ -584,4 +592,4 @@ function linetest() {
     )
 }
 
-export default linetest
+export default Forecast

@@ -565,7 +565,7 @@ function Forecast() {
                     <ToggleButton value="inc"> Weekly New</ToggleButton>
                 </ToggleButtonGroup>
                 <Typography ml={2} display="inline">
-                    Multiple Lines
+                    Multiple Plots
                 </Typography>
                 <Switch
                     checked={chartState.multiple_plot}

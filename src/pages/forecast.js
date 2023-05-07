@@ -50,7 +50,7 @@ function parseMetadata(metadata) {
 }
 
 const getMetadata = async () => {
-    const metadataResponse = await fetch('https://ry-nl.github.io/CS401/metadata.txt')
+    const metadataResponse = await fetch('/metadata.txt')
     const metadataContent = await metadataResponse.text()
     console.log(metadataContent)
     const metadata = parseMetadata(metadataContent).flat()

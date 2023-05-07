@@ -573,7 +573,7 @@ function Forecast() {
                     inputProps={{ 'aria-label': 'controlled' }}
                 />
             </div>
-            <div className="chart" style={{ width: '90vw' }}>
+            <div className="chart" style={{ width: '97vw' }}>
                 <Line
                     data={chartState.current_dataset}
                     // plugins={[hoverLinePlugin]}

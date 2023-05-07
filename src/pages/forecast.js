@@ -19,12 +19,11 @@ const zoomPlugin = dynamic(() => import('chartjs-plugin-zoom'), {
     ssr: false,
 })
 
-// INTIALIZIE VIA USE EFFECT
 let globalMetadata = []
 let fileList = {}
 // const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
 const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
-const metadataRoute = '/metadata.txt'
+const metadataRoute = 'https://ry-nl.github.io/CS401/metadata.txt'
 
 function parseMetadata(metadata) {
     const regex = /@\w+\{([^}]+)\}/g
@@ -57,9 +56,7 @@ function parseMetadata(metadata) {
 const getMetadata = async () => {
     const metadataResponse = await fetch(metadataRoute)
     const metadataContent = await metadataResponse.text()
-    console.log(metadataContent)
     const metadata = parseMetadata(metadataContent)
-    console.log(metadata)
     return metadata
 }
 
@@ -74,15 +71,6 @@ const getUrls = () => {
         if ('url_quantile' in item) urls.push(item.url_quantile)
         urlObj[target] = urls
     }
-    // globalMetadata.forEach((item) => {
-    //     let urls = []
-    //     urls.push(item.url)
-    //     if ('url_lower' in item) urls.push(item.url_lower)
-    //     if ('url_upper' in item) urls.push(item.url_upper)
-    //     if ('url_quantile' in item) urls.push(item.url_quantile)
-    //     urlObj[item.target] = urls
-    // })
-    console.log(urlObj)
     return urlObj
 }
 
@@ -322,7 +310,7 @@ function Forecast() {
         return allPredData
     }
 
-    const generateDatasets = (index) => {
+    const generateCumDatasets = (index) => {
         let datasets = []
 
         const baseData = getBaseData(index)
@@ -347,6 +335,70 @@ function Forecast() {
                 // backgroundColor: lineColorList[i + 1],
             })
         }
+
+        return datasets
+    }
+
+    const generateIncDatasets = (index) => {
+        const baseData = getBaseData(index)
+        const predData = getPredData(index)
+        let baseDiffData = []
+        let predDiffData = []
+        let datasets = []
+        let diff = 0
+
+        for (let i = 1; i < baseData.length; ++i) {
+            diff = baseData[i]['y'] - baseData[i - 1]['y']
+            if (diff < 0 || baseData[i - 1]['y'] <= 0) diff = 0
+
+            baseDiffData.push({
+                x: baseData[i]['x'],
+                y: diff,
+            })
+        }
+
+        if (predData.length > 0) {
+            diff = predData[0][0]['y'] - baseData[baseData.length - 1]['y']
+            if (diff < 0 || baseData[baseData.length - 1]['y'] <= 0) diff = 0
+
+            predDiffData.push({
+                x: baseDiffData[baseDiffData.length - 1]['x'],
+                y: baseDiffData[baseDiffData.length - 1]['y'],
+            })
+
+            predDiffData.push({
+                x: predData[0][0]['x'],
+                y: diff,
+            })
+
+            for (let i = 1; i < predData[0].length; ++i) {
+                diff = predData[0][i]['y'] - predData[0][i - 1]['y']
+                if (diff < 0 || baseData[i - 1]['y'] <= 0) diff = 0
+
+                predDiffData.push({
+                    x: predData[0][i]['x'],
+                    y: diff,
+                })
+            }
+        }
+
+        datasets.push({
+            label: chartState.labels[index] + ' Actual Diff',
+            data: baseDiffData,
+            fill: false,
+            tension: 0.1,
+            // borderColor: lineColorList[0],
+            // backgroundColor: lineColorList[0],
+        })
+
+        datasets.push({
+            label: chartState.labels[index] + ' Predictive Diff',
+            data: predDiffData,
+            fill: false,
+            tension: 0.1,
+            // borderColor: lineColorList[1],
+            // backgroundColor: lineColorList[1],
+        })
 
         return datasets
     }
@@ -384,17 +436,16 @@ function Forecast() {
         // find the index of the label
         for (i = 0; i < chartState.labels.length; ++i) if (chartState.labels[i] === newLabel) break
 
-        const newDataset = generateDatasets(i)
+        let newDataset
+        if (chartState.cum_or_inc == 'cum') newDataset = generateCumDatasets(i)
+        else newDataset = generateIncDatasets(i)
 
         if (chartState.multiple_plot) {
             let datasets = chartState.current_dataset.datasets
             datasets = datasets.concat(newDataset)
 
-            console.log(datasets)
-
             setChartState({
                 ...chartState,
-                cum_or_inc: 'cum',
                 current_label: newLabel,
                 current_dataset: {
                     datasets: datasets,
@@ -403,7 +454,6 @@ function Forecast() {
         } else {
             setChartState({
                 ...chartState,
-                cum_or_inc: 'cum',
                 current_label: newLabel,
                 current_dataset: {
                     datasets: newDataset,
@@ -427,76 +477,16 @@ function Forecast() {
                 ...chartState,
                 cum_or_inc: 'cum',
                 current_dataset: {
-                    datasets: generateDatasets(i),
+                    datasets: generateCumDatasets(i),
                 },
             })
         } else {
             // if incremental, calculate the difference between consecutive values
-            const baseData = getBaseData(i)
-            const predData = getPredData(i)
-            let baseDiffData = []
-            let predDiffData = []
-            let datasets = []
-            let diff = 0
-
-            for (let i = 1; i < baseData.length; ++i) {
-                diff = baseData[i]['y'] - baseData[i - 1]['y']
-                if (diff < 0 || baseData[i - 1]['y'] <= 0) diff = 0
-
-                baseDiffData.push({
-                    x: baseData[i]['x'],
-                    y: diff,
-                })
-            }
-
-            if (predData.length > 0) {
-                diff = predData[0][0]['y'] - baseData[baseData.length - 1]['y']
-                if (diff < 0 || baseData[baseData.length - 1]['y'] <= 0) diff = 0
-
-                predDiffData.push({
-                    x: baseDiffData[baseDiffData.length - 1]['x'],
-                    y: baseDiffData[baseDiffData.length - 1]['y'],
-                })
-
-                predDiffData.push({
-                    x: predData[0][0]['x'],
-                    y: diff,
-                })
-
-                for (let i = 1; i < predData[0].length; ++i) {
-                    diff = predData[0][i]['y'] - predData[0][i - 1]['y']
-                    if (diff < 0 || baseData[i - 1]['y'] <= 0) diff = 0
-
-                    predDiffData.push({
-                        x: predData[0][i]['x'],
-                        y: diff,
-                    })
-                }
-            }
-
-            datasets.push({
-                label: 'Actual Diff',
-                data: baseDiffData,
-                fill: false,
-                tension: 0.1,
-                // borderColor: lineColorList[0],
-                // backgroundColor: lineColorList[0],
-            })
-
-            datasets.push({
-                label: 'Predictive Diff',
-                data: predDiffData,
-                fill: false,
-                tension: 0.1,
-                // borderColor: lineColorList[1],
-                // backgroundColor: lineColorList[1],
-            })
-
             setChartState({
                 ...chartState,
                 cum_or_inc: 'inc',
                 current_dataset: {
-                    datasets: datasets,
+                    datasets: generateIncDatasets(i),
                 },
             })
         }
@@ -506,9 +496,10 @@ function Forecast() {
         const isMultiplePlot = chartState.multiple_plot
 
         if (isMultiplePlot) {
-            const datasets = generateDatasets(chartState.labels.indexOf(chartState.current_label))
-
-            console.log(datasets)
+            let datasets
+            if (chartState.cum_or_inc == 'cum')
+                datasets = generateCumDatasets(chartState.labels.indexOf(chartState.current_label))
+            else datasets = datasets = generateIncDatasets(chartState.labels.indexOf(chartState.current_label))
 
             setChartState({
                 ...chartState,

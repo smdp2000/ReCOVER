@@ -50,7 +50,7 @@ function parseMetadata(metadata) {
 }
 
 const getMetadata = async () => {
-    const metadataResponse = await fetch('/metadata.txt')
+    const metadataResponse = await fetch('https://ry-nl.github.io/CS401/metadata.txt')
     const metadataContent = await metadataResponse.text()
     console.log(metadataContent)
     const metadata = parseMetadata(metadataContent).flat()
@@ -114,7 +114,6 @@ function Forecast() {
     })
 
     useEffect(() => {
-        // fetch('/metadata.txt').then((response) => response.text().then((text) => console.log(text)))
         getMetadata().then((result) => {
             globalMetadata = result
             fileList = getUrls()

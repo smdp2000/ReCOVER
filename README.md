@@ -4,7 +4,9 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 Place a single metadata file named 'metadata.txt' into the public folder.
 
-Then, run the development server:
+Replace the value assigned to 'metadataRoute' at the top of src/pages/forecast.js to the following: '[your github pages url]/metadata.txt'
+
+To run the development server:
 
 ```bash
 npm run dev

@@ -24,12 +24,12 @@ let globalMetadata = []
 let fileList = {}
 // const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
 const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
-const metadataRoute = 'https://ry-nl.github.io/CS401/metadata.txt'
+const metadataRoute = '/metadata.txt'
 
 function parseMetadata(metadata) {
     const regex = /@\w+\{([^}]+)\}/g
     let match
-    const items = []
+    const items = {}
 
     while ((match = regex.exec(metadata)) !== null) {
         const item = {}
@@ -44,7 +44,11 @@ function parseMetadata(metadata) {
             item[key] = cleanedValue
         }
 
-        items.push(item)
+        const target = item['target']
+
+        if (target in items) {
+            for (const key in item) items[target][key] = item[key]
+        } else items[target] = item
     }
 
     return items
@@ -54,21 +58,31 @@ const getMetadata = async () => {
     const metadataResponse = await fetch(metadataRoute)
     const metadataContent = await metadataResponse.text()
     console.log(metadataContent)
-    const metadata = parseMetadata(metadataContent).flat()
+    const metadata = parseMetadata(metadataContent)
     console.log(metadata)
     return metadata
 }
 
 const getUrls = () => {
     let urlObj = {}
-    globalMetadata.forEach((item) => {
+    for (const target in globalMetadata) {
         let urls = []
+        const item = globalMetadata[target]
         urls.push(item.url)
         if ('url_lower' in item) urls.push(item.url_lower)
         if ('url_upper' in item) urls.push(item.url_upper)
         if ('url_quantile' in item) urls.push(item.url_quantile)
-        urlObj[item.target] = urls
-    })
+        urlObj[target] = urls
+    }
+    // globalMetadata.forEach((item) => {
+    //     let urls = []
+    //     urls.push(item.url)
+    //     if ('url_lower' in item) urls.push(item.url_lower)
+    //     if ('url_upper' in item) urls.push(item.url_upper)
+    //     if ('url_quantile' in item) urls.push(item.url_quantile)
+    //     urlObj[item.target] = urls
+    // })
+    console.log(urlObj)
     return urlObj
 }
 
@@ -118,7 +132,7 @@ function Forecast() {
         getMetadata().then((result) => {
             globalMetadata = result
             fileList = getUrls()
-            const initalFileName = globalMetadata[0].target
+            const initalFileName = Object.keys(globalMetadata)[0]
             setFileState({
                 name: initalFileName,
                 urls: fileList[initalFileName],
@@ -294,8 +308,8 @@ function Forecast() {
         for (let j = 0; j < chartState.cases['pred']['cases'].length; ++j) {
             let predData = []
 
-            // loop through each date in the predictive dataset
-            for (let k = 0; k < chartState.cases['pred']['dates'][j][index].length; ++k) {
+            // loop through each date in the predictive dataset`
+            for (let k = 0; k < chartState.cases['pred']['dates'][j].length; ++k) {
                 predData.push({
                     x: chartState.cases['pred']['dates'][j][k],
                     y: chartState.cases['pred']['cases'][j][index][k],

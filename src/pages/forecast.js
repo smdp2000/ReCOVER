@@ -24,6 +24,7 @@ let globalMetadata = []
 let fileList = {}
 // const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
 const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
+const metadataRoute = 'https://ry-nl.github.io/CS401/metadata.txt'
 
 function parseMetadata(metadata) {
     const regex = /@\w+\{([^}]+)\}/g
@@ -50,7 +51,7 @@ function parseMetadata(metadata) {
 }
 
 const getMetadata = async () => {
-    const metadataResponse = await fetch('https://ry-nl.github.io/CS401/metadata.txt')
+    const metadataResponse = await fetch(metadataRoute)
     const metadataContent = await metadataResponse.text()
     console.log(metadataContent)
     const metadata = parseMetadata(metadataContent).flat()

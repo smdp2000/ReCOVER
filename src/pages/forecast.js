@@ -4,6 +4,8 @@ import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
 import { readString } from 'react-papaparse'
 import axios from 'axios'
+//import { publicPath } from '@next/env'
+
 import {
     FormControl,
     InputLabel,
@@ -23,40 +25,46 @@ let globalMetadata = []
 let fileList = {}
 // const lineColorList = ['rgb(75, 192, 192)', 'rgb(255, 180, 48)', 'rgb(255, 230, 48)', 'rgb(255, 130, 48)']
 const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
-const metadataRoute = 'https://ry-nl.github.io/CS401/metadata.txt'
+const metadataRoute = `/metadata.txt`
+//console.log(metadataRoute)
+
+
 
 function parseMetadata(metadata) {
-    const regex = /@\w+\{([^}]+)\}/g
-    let match
-    const items = {}
+    const regex = /\{\s*([^}]+)\s*\}/g; 
+    let match;
+    const items = {};
 
     while ((match = regex.exec(metadata)) !== null) {
-        const item = {}
+        const item = {};
         const properties = match[1]
             .split('\n')
             .map((s) => s.trim())
-            .filter((s) => s.length > 0)
+            .filter((s) => s.length > 0);
 
         for (const property of properties) {
-            const [key, value] = property.split('=').map((s) => s.trim())
-            const cleanedValue = value.replace(/["{}]/g, '')
-            item[key] = cleanedValue
+            const [key, value] = property.split('=').map((s) => s.trim());
+            const cleanedValue = value.replace(/["{}]/g, ''); 
+            item[key] = cleanedValue;
         }
 
-        const target = item['target']
+        const target = item['target'];
 
         if (target in items) {
-            for (const key in item) items[target][key] = item[key]
-        } else items[target] = item
+            for (const key in item) items[target][key] = item[key];
+        } else items[target] = item;
     }
 
-    return items
+    return items;
 }
+
 
 const getMetadata = async () => {
     const metadataResponse = await fetch(metadataRoute)
+    //console.log(metadataResponse)
     const metadataContent = await metadataResponse.text()
     const metadata = parseMetadata(metadataContent)
+    //console.log(metadata)
     return metadata
 }
 
@@ -118,9 +126,12 @@ function Forecast() {
 
     useEffect(() => {
         getMetadata().then((result) => {
+            //console.log(result)
             globalMetadata = result
             fileList = getUrls()
             const initalFileName = Object.keys(globalMetadata)[0]
+            //console.log(initalFileName)
+            
             setFileState({
                 name: initalFileName,
                 urls: fileList[initalFileName],
@@ -172,8 +183,9 @@ function Forecast() {
         let allPredData = []
         let predDates = []
         let labels = []
-
+        //console.log(fileState)
         // set the colors for the actual and predictive data
+        
 
         for (let i = 1; i < fileState.urls.length; ++i) {
             await axios.get(fileState.urls[i]).then((response) => {

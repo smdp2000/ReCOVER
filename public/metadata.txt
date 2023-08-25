@@ -1,53 +1,37 @@
-@forecast{
+{
     target = cases
     url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_data.csv"
-    data_type = ground_truth
-    data_period = weekly
-    data_level = state_level
-    measure = MAE
+    data_type = truth
 }
 
-@forecast{
+
+{
     target = cases
-    url_quantile = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0.csv"
-    prediction_period = 1 week ahead
+    quantile = 1
+    url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_ub.csv"
 }
 
-@forecast{
+{
     target = cases
-    url_upper = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_ub.csv"
-    prediction_period = 1 week ahead
-}
-
-@forecast{
-    target = cases
+    quantile = 0
     url_lower = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_forecasts_current_0_lb.csv"
-    prediction_period = 1 week ahead
 }
 
-@forecast{
+{
     url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths.csv"
     target = deaths
     data_type = ground_truth
-    data_period = weekly
-    data_level = state_level
-    measure = MAE
 }
 
-@forecast{
+
+{
     target = deaths
-    url_quantile = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0.csv"
-    prediction_period = 1 week ahead
+    quantile = 1
+    url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_ub.csv"
 }
 
-@forecast{
+{
     target = deaths
-    url_upper = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_ub.csv"
-    prediction_period = 1 week ahead
-}
-
-@forecast{
-    target = deaths
-    url_lower = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_lb.csv"
-    prediction_period = 1 week ahead
+    quantile = 0
+    url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/forecasts/us_deaths_current_0_lb.csv"
 }

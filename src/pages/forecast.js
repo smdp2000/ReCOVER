@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import 'chart.js/auto'
 import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
@@ -17,6 +17,7 @@ import {
     Typography,
 } from '@mui/material'
 import dynamic from 'next/dynamic'
+import { Black_And_White_Picture } from 'next/font/google'
 const zoomPlugin = dynamic(() => import('chartjs-plugin-zoom'), {
     ssr: false,
 })
@@ -28,36 +29,75 @@ const datasetLabels = ['Actual', 'Predictive', 'Upper Bound', 'Lower Bound']
 const metadataRoute = `/metadata.txt`
 //console.log(metadataRoute)
 
+const determinePointColor = (pointType) => {
+    console.log(pointType)
+    if (pointType.includes("Upper Bound")){
+            return "black";
+    }
+    else if(pointType.includes("Predictive")){
+            return "red"
+    }
+    else if(pointType.includes("Lower Bound"))
+    {
+        return "green"
+    }
+    else{
+            return "blue"
+    }
+
+};
 
 
 function parseMetadata(metadata) {
     const regex = /\{\s*([^}]+)\s*\}/g; 
     let match;
-    const items = {};
+    const items = [];
 
     while ((match = regex.exec(metadata)) !== null) {
-        const item = {};
+        const item = {
+            data_type: 'prediction',
+            quantile: 'mean'
+        };
+        
         const properties = match[1]
             .split('\n')
             .map((s) => s.trim())
             .filter((s) => s.length > 0);
-
         for (const property of properties) {
             const [key, value] = property.split('=').map((s) => s.trim());
             const cleanedValue = value.replace(/["{}]/g, ''); 
             item[key] = cleanedValue;
         }
-
-        const target = item['target'];
-
-        if (target in items) {
-            for (const key in item) items[target][key] = item[key];
-        } else items[target] = item;
+        if (item.data_type === 'truth') {
+            delete item.quantile;
+        }
+        items.push(item);
     }
+    console.log(items)
 
-    return items;
+    const result = {};
+
+    items.forEach(dataObj => {
+        // Determine the target
+        const target = dataObj.target;
+
+        if (!result[target]) {
+            result[target] = { target: target, url: "", url_lower: "", url_upper: "" };
+        }
+
+        if (dataObj.data_type === "truth" || dataObj.data_type === "ground_truth") {
+            result[target].url = dataObj.url;
+        } else if (dataObj.quantile !== undefined) {
+            if (dataObj.quantile === "0") {
+                result[target].url_lower = dataObj.url || dataObj.url_lower;
+            } else if (dataObj.quantile === "1") {
+                result[target].url_upper = dataObj.url || dataObj.url_upper;
+            }
+        }
+    });
+    console.log(result)
+    return result;
 }
-
 
 const getMetadata = async () => {
     const metadataResponse = await fetch(metadataRoute)
@@ -205,7 +245,7 @@ function Forecast() {
 
                         predDates.push(results.data[0].slice(2)) // slice to remove the id and label from dates array
                         allPredData.push(cases)
-
+                        console.log(predDates)
                         for (let j = 0; j < cases[0].length; ++j) {
                             predData.push({
                                 x: predDates[i - 1][j],
@@ -528,6 +568,29 @@ function Forecast() {
         }
     }
 
+    const chartContainerRef = useRef(null);
+    const chartRef = useRef(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+    
+
+    useEffect(() => {
+        const resizeObserver = new ResizeObserver(entries => {
+            if (!Array.isArray(entries) || !entries.length) {
+                return;
+            }
+    
+            setContainerWidth(entries[0].contentRect.width);
+        });
+    
+        if (chartContainerRef.current) {
+            resizeObserver.observe(chartContainerRef.current);
+        }
+    
+        return () => resizeObserver.disconnect();
+    
+    }, []);
+    
+
     return (
         <div>
             <div className="menu">
@@ -585,11 +648,23 @@ function Forecast() {
                     inputProps={{ 'aria-label': 'controlled' }}
                 />
             </div>
-            <div className="chart" style={{ width: '97vw' }}>
+            <div className="chart" ref={chartContainerRef} style={{ position: "relative", margin: "auto", width: '100%' }}>
                 <Line
-                    data={chartState.current_dataset}
+                    ref={chartRef}
+                    key={containerWidth}
+                    data={{
+                        ...chartState.current_dataset,
+                        datasets: chartState.current_dataset.datasets.map(dataset => ({
+                            ...dataset,
+                            borderWidth: 2,
+                            pointHoverRadius:12,
+
+                            
+                        }))
+                    }}
                     // plugins={[hoverLinePlugin]}
                     options={{
+                        maintainAspectRatio: false,
                         scales: {
                             x: {
                                 type: 'time',

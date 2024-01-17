@@ -1,6 +1,6 @@
 {
     target = cases
-    url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/historical_forecasts/2022-11-15/global_data.csv"
+    url = "https://raw.githubusercontent.com/smdp2000/data_dump/main/truth11-01.csv"
     data_type = truth
 }
 
@@ -8,11 +8,11 @@
 {
     target = cases
     quantile = 1
-    url = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/historical_forecasts/2022-11-15/global_forecasts_cases_ub.csv"
+    url = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-08-SGroup-RandomForest_0.975.csv"
 }
 
 {
     target = cases
     quantile = 0
-    url_lower = "https://raw.githubusercontent.com/scc-usc/ReCOVER-COVID-19/master/results/historical_forecasts/2022-11-15/global_forecasts_cases_lb.csv"
+    url_lower = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-08-SGroup-RandomForest_0.025.csv"
 }

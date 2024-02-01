@@ -1,18 +1,63 @@
+
 {
-    target = cases
+    target = cov_hospitalizations
     url = "https://raw.githubusercontent.com/smdp2000/data_dump/main/truth11-01.csv"
     data_type = truth
+    data_freq = "inc"
+    incident = 1
+    cumulative = 0
+    title = "Covid Hospitalizations"
+    xtitle = "Date"
+    ytitle = "Hospitalizations"
 }
 
 
 {
-    target = cases
+    target = cov_hospitalizations
     quantile = 1
     url = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-08-SGroup-RandomForest_0.975.csv"
 }
 
 {
-    target = cases
-    quantile = 0
+    target = cov_hospitalizations
+    quantile = 0.025
     url_lower = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-08-SGroup-RandomForest_0.025.csv"
+}
+
+{
+    target = cov_hospitalizations
+    quantile = 0.5
+    url_quantile = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-15-SGroup-RandomForest_0.5.csv"
+}
+
+
+{
+    target = flu_hospitalizations
+    url = "https://raw.githubusercontent.com/smdp2000/data_dump/main/truth11-01flu.csv"
+    data_type = truth
+    data_freq = "cum"
+    incident = 1
+    cumulative = 1
+    title = "Flu Hospitalizations"
+    xtitle = "Date"
+    ytitle = "Hospitalizations"
+}
+
+
+{
+    target = flu_hospitalizations
+    quantile = 1
+    url = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-13-SGroup-RandomForest_0.975flu.csv"
+}
+
+{
+    target = flu_hospitalizations
+    quantile = 0.025
+    url_lower = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-13-SGroup-RandomForest_0.025flu.csv"
+}
+
+{
+    target = flu_hospitalizations
+    quantile = 0.5
+    url_quantile = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-13-SGroup-RandomForest_0.5flu.csv"
 }

@@ -2,9 +2,8 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-Place a single metadata file named 'metadata.txt' into the public folder.
+Place a single metadata file named metadata.txt [https://github.com/smdp2000/ReCOVER/blob/main/public/metadata.txt] into the public folder.
 
-Replace the value assigned to 'metadataRoute' at the top of src/pages/forecast.js to the following: '[your github pages url]/metadata.txt'
 
 To run the development server:
 
@@ -20,14 +19,36 @@ Open [http://localhost:3000](http://localhost:3000) with your browser.
 
 Once on the main page, click 'Forecast' to navigate to the forecast page.
 
-## Learn More
+## Editing the Metadata File
 
-To learn more about Next.js, take a look at the following resources:
+To correctly display data on the dashboard, the metadata file needs to be accurately filled out. Each data block corresponds to a specific dataset and has several fields that need to be defined. Here are the fields you'll need to edit:
 
--   [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
--   [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Data Type = Truth Block
+- **`url`**: The direct link to the CSV file containing the data.
+- **`data_freq`**: Defines the frequency of the source data. Use `"inc"` for incident data source and `"cum"` for cumulative source data.
+- **`incident`**: Set to `1` if you want the dashboard to display incident data. Otherwise, set to `0`.
+- **`cumulative`**: Set to `1` if you want the dashboard to display cumulative data. Otherwise, set to `0`.
+- **`title`**: The title of the graph that will be displayed on the dashboard.
+- **`xtitle`**: The title for the x-axis, usually `"Date"`.
+- **`ytitle`**: The title for the y-axis, such as `"Hospitalizations"`.
+- **`target`**: Specifies the type of hospitalizations data provided. For example, use `"cov_hospitalizations"` for COVID hospitalizations and `"flu_hospitalizations"` for flu hospitalizations.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### Quantile Blocks
+For datasets that include quantile forecasts, ensure the following:
+- **`target`**: Matches the `target` in the Data Type = Truth Block to ensure it's displayed on the same graph.
+- **`quantile`**: Specifies the quantile value of the forecast data. Common quantiles are `1`, `0`, `0.025`, and `0.975`.
+- **`url`**,  **`url_upper`**, **`url_lower`**, **`url_quantile`**: Direct links to the CSV files containing the respective quantile data. Use `url_upper` for the upper quantile (e.g., `0.975`, ), `url_lower` for the lower quantile (e.g., `0.025`), and `url_quantile` for the median or any central quantile.
+
+### Important Notes
+- If you're providing **incident source data**, you cannot expect the dashboard to display cumulative data accurately. Set `incident=1` and `cumulative=0`. As we dont calculate cumulative at the dashboard end.
+- Conversely, if your source data is **cumulative** and you want the dashboard to show incident data, provide the source as cumulative (`cumulative=1`) and also set `incident=1`. This ensures the dashboard processes and displays the data correctly.
+
+By following these guidelines and ensuring that the metadata for each dataset is correctly filled out, you will enable accurate and meaningful visualizations on the dashboard for both COVID and flu hospitalization data.
+
+
+## Input Data Processing
+It could be a possibility your data isnt formatted as per the input standard our dashboard accept. Checkout the url links in metadata.txt to confirm the data input. Here is an helper python notebook to help you with data processing.
+
 
 ## Deploy on Vercel
 

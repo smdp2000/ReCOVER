@@ -1,4 +1,4 @@
-# [COVID-19 & Flu Hospitalization Dashboard]()
+# [COVID-19 & Flu Hospitalization Dashboard](https://re-cover.vercel.app/)
 
 ## Overview
 
@@ -83,6 +83,8 @@ Create a Vercel Account: If you haven't already, create a Vercel account. You ca
 - Importing a Git Repository: If your cloned project is already on GitHub (or another version control platform that Vercel supports), you can import it directly. During this process, you can specify which repositories Vercel should have access to.
 
 - Deployment and Configuration: After selecting the repository, you will be guided through some configuration options for your project's build and deployment. Once configured, deploy your project.
+
+- Your URL will be displayed beside the repository on your vercel account dashboard. Generally it follows the convention - https://REPOSITORY_NAME.vercel.app/
 
 - Updating Your Project: When you make changes to your project and push updates to the repository, Vercel will automatically handle the builds. This automation makes it easy to manage deployments directly from your version control system.
 

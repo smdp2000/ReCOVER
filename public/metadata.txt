@@ -20,7 +20,7 @@
 
 {
     target = cov_hospitalizations
-    quantile = 0.025
+    quantile = 0
     url_lower = "https://raw.githubusercontent.com/smdp2000/data_dump/main/2024-01-08-SGroup-RandomForest_0.025.csv"
 }
 

@@ -1,7 +1,29 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# [COVID-19 & Flu Hospitalization Dashboard]()
+
+## Overview
+
+This interactive dashboard provides a comprehensive overview of hospitalization rates due to COVID-19 and the flu across various regions. Utilizing the latest data, it offers insights into trends, predictions, and comparisons between different states and timeframes. Our goal is to present a clear and accessible platform for public health officials, researchers, and the general public to understand the impact of these illnesses and to aid in decision-making processes.
+
+## Features
+
+- **Interactive Charts**: Explore hospitalization data through dynamic, interactive visualizations. Users can select specific states or regions to view trends over time.
+
+- **Predictive Analytics**: The dashboard incorporates predictive models to forecast future hospitalization rates, helping users anticipate potential outbreaks or declines.
+
+- **Region Selection**: Users can select from a dropdown menu to filter data by specific states or regions, allowing for localized insights.
+
+- **Quantile Analysis**: For predictive data, the dashboard presents quantiles, including upper and lower bounds, to understand the potential range of outcomes.
+
+- **Responsive Design**: Optimized for both desktop and mobile devices, ensuring accessibility and ease of use regardless of how you access the dashboard.
+
+- **Multiplot** : Compare various regions hospitilization rates, by enabling multiplot
+
+## Data Sources
+
+The dashboard utilizes real-time data from reputable sources, including the CDC, and various public health departments. 
 
 ## Getting Started
-
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 Place a single metadata file named [metadata.txt](https://github.com/smdp2000/ReCOVER/blob/main/public/metadata.txt) into the public folder.
 
 
@@ -36,7 +58,7 @@ To correctly display data on the dashboard, the metadata file needs to be accura
 ### Quantile Blocks
 For datasets that include quantile forecasts, ensure the following:
 - **`target`**: Matches the `target` in the Data Type = Truth Block to ensure it's displayed on the same graph.
-- **`quantile`**: Specifies the quantile value of the forecast data. Common quantiles are `1`, `0`, `0.025`, and `0.975`.
+- **`quantile`**: Specifies the quantile value of the forecast data. Common quantiles are `1`, `0`, `0.025`, and `0.975`. If you want a particular value to be a upper bound or lower bound, provide quantile value as `1` or `0` respectively.
 - **`url`**,  **`url_upper`**, **`url_lower`**, **`url_quantile`**: Direct links to the CSV files containing the respective quantile data. Use `url_upper` for the upper quantile (e.g., `0.975`, ), `url_lower` for the lower quantile (e.g., `0.025`), and `url_quantile` for the median or any central quantile.
 
 ### Important Notes
@@ -47,7 +69,7 @@ By following these guidelines and ensuring that the metadata for each dataset is
 
 
 ## Input Data Processing
-It could be a possibility your data isnt formatted as per the input standard our dashboard accept. Checkout the url links in metadata.txt to confirm the data input. Here is an helper python notebook to help you with data processing.
+It could be a possibility your data isnt formatted as per the input standard our dashboard accept. Checkout the url links in metadata.txt to confirm the data input. Here is an helper [Python Notebook](https://github.com/smdp2000/ReCOVER/blob/main/ProcessData.ipynb) to help you with data processing.
 
 
 ## Deploy on Vercel

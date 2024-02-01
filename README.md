@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-Place a single metadata file named metadata.txt [https://github.com/smdp2000/ReCOVER/blob/main/public/metadata.txt] into the public folder.
+Place a single metadata file named [metadata.txt](https://github.com/smdp2000/ReCOVER/blob/main/public/metadata.txt) into the public folder.
 
 
 To run the development server:
